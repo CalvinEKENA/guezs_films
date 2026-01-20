@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "682820949159",
+    "project_id": "guezs-films",
+    "storage_bucket": "guezs-films.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:682820949159:android:decef4fadfb26a7a7ab782",
+        "android_client_info": {
+          "package_name": "com.guezfilms.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBgYuhnbUrKu4hU0BMzlEcEpS-IAHliAXU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

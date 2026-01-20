@@ -1,0 +1,13 @@
+﻿Analyzing lib...
+
+   info - core\errors\failures.dart:9:9 - Parameter 'message' could be a super parameter. Trying converting 'message' to a super parameter. - use_super_parameters
+   info - core\errors\failures.dart:15:9 - Parameter 'message' could be a super parameter. Trying converting 'message' to a super parameter. - use_super_parameters
+   info - core\errors\failures.dart:21:9 - Parameter 'message' could be a super parameter. Trying converting 'message' to a super parameter. - use_super_parameters
+   info - core\errors\failures.dart:27:9 - Parameter 'message' could be a super parameter. Trying converting 'message' to a super parameter. - use_super_parameters
+   info - core\errors\failures.dart:33:9 - Parameter 'message' could be a super parameter. Trying converting 'message' to a super parameter. - use_super_parameters
+   info - core\utils\extensions.dart:1:1 - Dangling library doc comment. Add a 'library' directive after the library comment. - dangling_library_doc_comments
+   info - core\widgets\shimmer_loading.dart:103:35 - Unnecessary use of multiple underscores. Try using '_'. - unnecessary_underscores
+   info - features\profile\presentation\pages\profile_page.dart:247:31 - Unnecessary use of multiple underscores. Try using '_'. - unnecessary_underscores
+   info - features\search\presentation\pages\search_page.dart:28:16 - The private field _searchHistory could be 'final'. Try making the field 'final'. - prefer_final_fields
+
+9 issues found.
