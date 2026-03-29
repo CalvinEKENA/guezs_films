@@ -12,7 +12,20 @@
           "package_name": "com.guezfilms.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "682820949159-fbgiof75f1d6d89pqhlckrfhcegnk58b.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.guezfilms.app",
+            "certificate_hash": "7b5bef377560fd3fbb07191846c852c6281a2f0a"
+          }
+        },
+        {
+          "client_id": "682820949159-vo9talk0vd4mmkofqd5d57m55m0o0nk3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBgYuhnbUrKu4hU0BMzlEcEpS-IAHliAXU"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "682820949159-vo9talk0vd4mmkofqd5d57m55m0o0nk3.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

@@ -25,7 +25,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       icon: Icons.movie_filter_rounded,
       title: 'Films & Séries Illimités',
       description:
-          'Accédez à des milliers de films et séries en streaming haute qualité, où que vous soyez.',
+          'Découvrez nos productions originales exclusives et le meilleur du cinéma camerounais, pour une expérience unique signée Guezs Films.',
       gradient: [AppColors.primary, AppColors.primaryDark],
     ),
     _OnboardingSlide(
@@ -46,7 +46,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       icon: Icons.family_restroom_rounded,
       title: 'Profils Personnalisés',
       description:
-          'Créez jusqu\'à 4 profils pour toute la famille avec des recommandations adaptées.',
+          'Activez votre accès exclusif par code promo et créez jusqu\'à 4 profils personnalisés pour toute la famille.',
       gradient: [AppColors.accent, AppColors.accentSoft],
     ),
   ];
@@ -69,7 +69,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   void _goToLogin() {
-    context.go(Routes.login);
+    context.go(Routes.login, extra: {'isLogin': false});
   }
 
   @override

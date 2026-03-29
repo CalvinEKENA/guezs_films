@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:guezs_films/features/auth/presentation/providers/auth_providers.dart';
+import '../../features/auth/domain/entities/user_entity.dart';
+import '../../features/auth/presentation/providers/auth_providers.dart';
 import 'package:guezs_films/features/auth/presentation/pages/splash_page.dart';
 import 'package:guezs_films/features/auth/presentation/pages/onboarding_page.dart';
 import 'package:guezs_films/features/auth/presentation/pages/login_page.dart';
@@ -16,13 +17,25 @@ import 'package:guezs_films/core/routes/route_constants.dart';
 /// App Router Configuration
 /// Handles all navigation with go_router
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authStateProvider);
+  // Use a ValueNotifier to notify GoRouter of updates without rebuilding the provider
+  final authStateNotifier = ValueNotifier<AsyncValue<UserEntity?>>(
+    const AsyncValue.loading(),
+  );
+
+  // Listen to auth state changes and update the notifier
+  ref.onDispose(authStateNotifier.dispose);
+  ref.listen<AsyncValue<UserEntity?>>(
+    authStateProvider,
+    (_, next) => authStateNotifier.value = next,
+  );
 
   return GoRouter(
     navigatorKey: AppRouter.rootNavigatorKey,
     initialLocation: Routes.splash,
     debugLogDiagnostics: true,
+    refreshListenable: authStateNotifier,
     redirect: (context, state) {
+      final authState = authStateNotifier.value;
       final isLoading = authState.isLoading;
       final hasError = authState.hasError;
       final user = authState.valueOrNull;
@@ -36,7 +49,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       if (user == null) {
         // If not logged in and trying to access protected route, go to login
-        return isAuthRoute ? null : Routes.onboarding;
+        return isAuthRoute ? null : Routes.login;
       }
 
       // If logged in and on auth route, go home

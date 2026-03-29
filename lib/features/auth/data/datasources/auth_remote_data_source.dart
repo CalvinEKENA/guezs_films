@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../../../../core/errors/exceptions.dart';
 
 abstract class AuthRemoteDataSource {
@@ -68,11 +69,29 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Future<UserCredential> signInWithGoogle() async {
-    // Note: This requires google_sign_in package which is not yet added
-    // For now, throwing unimplemented or using a different flow if needed
-    throw UnimplementedError(
-      'Le lien avec Google n\'est pas encore implémenté.',
-    );
+    try {
+      final GoogleSignIn googleSignIn = GoogleSignIn();
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+
+      if (googleUser == null) {
+        // User canceled the sign-in flow
+        throw ServerException('Connexion Google annulée');
+      }
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
+      final OAuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      return await _firebaseAuth.signInWithCredential(credential);
+    } on FirebaseAuthException catch (e) {
+      throw ServerException(e.message ?? 'Erreur de connexion Google');
+    } catch (e) {
+      throw ServerException(e.toString());
+    }
   }
 
   @override

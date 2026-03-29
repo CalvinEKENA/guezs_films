@@ -64,14 +64,20 @@ class _ConsumerHomePageState extends ConsumerState<HomePage> {
           controller: _scrollController,
           slivers: [
             // Hero section
-            trendingAsync.when(
-              data: (movies) => SliverToBoxAdapter(
-                child: _buildHeroSection(
-                  movies.isNotEmpty ? movies.first : null,
+            SliverToBoxAdapter(
+              child: _buildHeroSection(
+                const Movie(
+                  id: 999999, // Fake ID
+                  title: "L'épouse du Mbenguiste",
+                  overview:
+                      "Une production originale Guezs Films qui explore les défis et les espoirs d'une femme attendant son mari parti à l'étranger.",
+                  posterPath: "assets/images/betty.png",
+                  backdropPath: "assets/images/betty.png",
+                  voteAverage: 9.5,
+                  releaseDate: "2024-12-25",
+                  genreIds: [18, 10749], // Drama, Romance
                 ),
               ),
-              loading: () => const SliverToBoxAdapter(child: HeroShimmer()),
-              error: (e, st) => SliverToBoxAdapter(child: _buildErrorHero()),
             ),
 
             // Content sections
@@ -151,7 +157,9 @@ class _ConsumerHomePageState extends ConsumerState<HomePage> {
         children: [
           // Background image
           CachedImage(
-            imageUrl: ApiConstants.backdropOriginal + movie.backdropPath,
+            imageUrl: movie.id == 999999
+                ? movie.backdropPath
+                : ApiConstants.backdropOriginal + movie.backdropPath,
             borderRadius: BorderRadius.zero,
           ),
 
@@ -368,21 +376,6 @@ class _ConsumerHomePageState extends ConsumerState<HomePage> {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildErrorHero() {
-    return Container(
-      height: 300,
-      color: AppColors.surface,
-      child: Center(
-        child: Text(
-          'Impossible de charger la vedette',
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.textSecondary,
-          ),
         ),
       ),
     );

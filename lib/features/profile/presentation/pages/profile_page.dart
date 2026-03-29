@@ -1,16 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/routes/route_constants.dart';
+
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/glass_card.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 
 /// User profile page with settings and account info
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authStateProvider);
+    final user = authState.valueOrNull;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -32,7 +38,7 @@ class ProfilePage extends StatelessWidget {
               const SizedBox(height: 24),
 
               // Profile card
-              _buildProfileCard(context),
+              _buildProfileCard(context, user),
 
               const SizedBox(height: 24),
 
@@ -140,7 +146,7 @@ class ProfilePage extends StatelessWidget {
                 width: double.infinity,
                 child: OutlinedButton.icon(
                   onPressed: () {
-                    _showLogoutDialog(context);
+                    _showLogoutDialog(context, ref);
                   },
                   icon: const Icon(Icons.logout, color: AppColors.error),
                   label: Text(
@@ -176,7 +182,12 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileCard(BuildContext context) {
+  Widget _buildProfileCard(BuildContext context, dynamic user) {
+    // Determine display name and email
+    final displayName = user?.displayName ?? 'Utilisateur';
+    final email = user?.email ?? 'Se connecter';
+    final photoUrl = user?.photoUrl;
+
     return GlassCard(
       blur: 15,
       opacity: 0.1,
@@ -191,8 +202,16 @@ class ProfilePage extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: AppColors.primaryGradient,
               borderRadius: BorderRadius.circular(16),
+              image: photoUrl != null
+                  ? DecorationImage(
+                      image: NetworkImage(photoUrl),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
             ),
-            child: const Icon(Icons.person, color: Colors.white, size: 32),
+            child: photoUrl == null
+                ? const Icon(Icons.person, color: Colors.white, size: 32)
+                : null,
           ),
 
           const SizedBox(width: 16),
@@ -203,17 +222,21 @@ class ProfilePage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Utilisateur',
+                  displayName,
                   style: AppTextStyles.titleLarge.copyWith(
                     color: AppColors.textPrimary,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'user@email.com',
+                  email,
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: AppColors.textSecondary,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -363,7 +386,7 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  void _showLogoutDialog(BuildContext context) {
+  void _showLogoutDialog(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -391,9 +414,13 @@ class ProfilePage extends StatelessWidget {
             ),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              context.go(Routes.login);
+              // Trigger sign out and force navigation
+              await ref.read(authControllerProvider.notifier).logout();
+              if (context.mounted) {
+                context.go(Routes.login);
+              }
             },
             child: Text(
               'Déconnecter',

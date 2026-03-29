@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
@@ -25,6 +26,15 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   bool _isLogin = true;
   bool _obscurePassword = true;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final extra = GoRouterState.of(context).extra;
+    if (extra is Map<String, dynamic> && extra.containsKey('isLogin')) {
+      _isLogin = extra['isLogin'] as bool;
+    }
+  }
 
   @override
   void dispose() {
@@ -290,21 +300,28 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  _SocialButton(
-                                    icon: Icons.g_mobiledata_rounded,
-                                    onTap: () {
-                                      ref
-                                          .read(authControllerProvider.notifier)
-                                          .signInWithGoogle();
-                                    },
-                                  ),
-                                  const SizedBox(width: 16),
-                                  _SocialButton(
-                                    icon: Icons.apple,
-                                    onTap: () {
-                                      // TODO: Apple sign in
-                                    },
-                                  ),
+                                  if (Platform.isAndroid || Platform.isWindows)
+                                    _SocialButton(
+                                      icon: Icons.g_mobiledata_rounded,
+                                      onTap: () {
+                                        ref
+                                            .read(
+                                              authControllerProvider.notifier,
+                                            )
+                                            .signInWithGoogle();
+                                      },
+                                    ),
+                                  if ((Platform.isAndroid ||
+                                          Platform.isWindows) &&
+                                      (Platform.isIOS || Platform.isWindows))
+                                    const SizedBox(width: 16),
+                                  if (Platform.isIOS || Platform.isWindows)
+                                    _SocialButton(
+                                      icon: Icons.apple,
+                                      onTap: () {
+                                        // TODO: Apple sign in
+                                      },
+                                    ),
                                 ],
                               ),
                             ],
@@ -352,26 +369,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   Widget _buildLogo() {
     return Column(
       children: [
-        Container(
-          width: 80,
-          height: 80,
-          decoration: BoxDecoration(
-            gradient: AppColors.primaryGradient,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.4),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: const Icon(
-            Icons.play_arrow_rounded,
-            size: 45,
-            color: Colors.white,
-          ),
-        ),
+        Image.asset('assets/icons/launch.png', width: 100, height: 100),
         const SizedBox(height: 16),
         Text(
           'GUEZS FILMS',

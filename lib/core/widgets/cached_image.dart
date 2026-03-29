@@ -33,6 +33,21 @@ class CachedImage extends StatelessWidget {
       return _buildError();
     }
 
+    // Check if it's a local asset
+    if (imageUrl!.startsWith('assets/') || !imageUrl!.startsWith('http')) {
+      return ClipRRect(
+        borderRadius: borderRadius ?? BorderRadius.circular(8),
+        child: Image.asset(
+          imageUrl!,
+          width: width,
+          height: height,
+          fit: fit,
+          errorBuilder: (context, error, stackTrace) =>
+              errorWidget ?? _buildError(),
+        ),
+      );
+    }
+
     return ClipRRect(
       borderRadius: borderRadius ?? BorderRadius.circular(8),
       child: CachedNetworkImage(

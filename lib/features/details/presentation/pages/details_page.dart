@@ -57,8 +57,39 @@ class _DetailsPageState extends ConsumerState<DetailsPage> {
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
-    final movieAsync = ref.watch(movieDetailsProvider(widget.contentId));
-    final creditsAsync = ref.watch(movieCreditsProvider(widget.contentId));
+    final isLocalMovie = widget.contentId == 999999;
+
+    final AsyncValue<Movie> movieAsync = isLocalMovie
+        ? const AsyncValue.data(
+            Movie(
+              id: 999999,
+              title: "L'épouse du Mbenguiste",
+              overview:
+                  "Une production originale Guezs Films qui explore les défis et les espoirs d'une femme attendant son mari parti à l'étranger.",
+              posterPath: "assets/images/betty.png",
+              backdropPath: "assets/images/betty.png",
+              voteAverage: 9.5,
+              releaseDate: "2024-12-25",
+              genreIds: [18, 10749],
+            ),
+          )
+        : ref.watch(movieDetailsProvider(widget.contentId));
+    final AsyncValue<List<Cast>> creditsAsync = isLocalMovie
+        ? const AsyncValue.data([
+            Cast(
+              id: 1,
+              name: 'Yvette MENGUE',
+              character: 'L\'épouse',
+              profilePath: 'assets/images/yvette.jpg',
+            ),
+            Cast(
+              id: 2,
+              name: 'Leslie NOAH',
+              character: 'Le Mbenguiste',
+              profilePath: '',
+            ),
+          ])
+        : ref.watch(movieCreditsProvider(widget.contentId));
     final similarAsync = ref.watch(similarMoviesProvider(widget.contentId));
 
     return Scaffold(
@@ -171,7 +202,9 @@ class _DetailsPageState extends ConsumerState<DetailsPage> {
           Transform.translate(
             offset: Offset(0, -parallaxOffset),
             child: CachedImage(
-              imageUrl: ApiConstants.backdropOriginal + movie.backdropPath,
+              imageUrl: movie.id == 999999
+                  ? movie.backdropPath
+                  : ApiConstants.backdropOriginal + movie.backdropPath,
               height: height + 100,
               borderRadius: BorderRadius.zero,
             ),
@@ -409,8 +442,9 @@ class _DetailsPageState extends ConsumerState<DetailsPage> {
                       ),
                       child: ClipOval(
                         child: CachedImage(
-                          imageUrl:
-                              ApiConstants.profileMedium + actor.profilePath,
+                          imageUrl: actor.profilePath.startsWith('assets/')
+                              ? actor.profilePath
+                              : ApiConstants.profileMedium + actor.profilePath,
                           borderRadius: BorderRadius.circular(35),
                         ),
                       ),
@@ -515,7 +549,9 @@ class _DetailsPageState extends ConsumerState<DetailsPage> {
             'videoUrl':
                 'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4',
             'title': movie.title,
-            'posterUrl': ApiConstants.backdropOriginal + movie.backdropPath,
+            'posterUrl': movie.id == 999999
+                ? movie.backdropPath
+                : ApiConstants.backdropOriginal + movie.backdropPath,
           },
         );
       },
