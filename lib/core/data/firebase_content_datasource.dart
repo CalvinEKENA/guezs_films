@@ -132,15 +132,11 @@ class FirebaseContentDataSourceImpl implements FirebaseContentDataSource {
 
   @override
   Future<List<FilmModel>> searchFilms(String query) async {
-    final normalizedQuery = query.trim();
-    if (normalizedQuery.isEmpty) {
-      return const [];
-    }
+    final normalizedQuery = query.trim().toLowerCase();
+    if (normalizedQuery.isEmpty) return const [];
 
     final snapshot = await _filmsCollection
-        .orderBy('title')
-        .where('title', isGreaterThanOrEqualTo: normalizedQuery)
-        .where('title', isLessThanOrEqualTo: '$normalizedQuery\uf8ff')
+        .where('searchTokens', arrayContains: normalizedQuery)
         .get();
 
     return snapshot.docs.map(FilmModel.fromFirestore).toList(growable: false);
@@ -148,15 +144,11 @@ class FirebaseContentDataSourceImpl implements FirebaseContentDataSource {
 
   @override
   Future<List<SeriesModel>> searchSeries(String query) async {
-    final normalizedQuery = query.trim();
-    if (normalizedQuery.isEmpty) {
-      return const [];
-    }
+    final normalizedQuery = query.trim().toLowerCase();
+    if (normalizedQuery.isEmpty) return const [];
 
     final snapshot = await _seriesCollection
-        .orderBy('title')
-        .where('title', isGreaterThanOrEqualTo: normalizedQuery)
-        .where('title', isLessThanOrEqualTo: '$normalizedQuery\uf8ff')
+        .where('searchTokens', arrayContains: normalizedQuery)
         .get();
 
     return snapshot.docs.map(SeriesModel.fromFirestore).toList(growable: false);
