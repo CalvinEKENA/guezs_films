@@ -337,7 +337,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                           _SocialButton(
                                             assetPath: 'assets/icons/apple.png',
                                             onTap: () {
-                                              // TODO: Apple sign in
+                                              ref
+                                                  .read(authControllerProvider
+                                                      .notifier)
+                                                  .signInWithApple();
                                             },
                                           ),
                                       ],

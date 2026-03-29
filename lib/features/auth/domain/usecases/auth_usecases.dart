@@ -47,6 +47,16 @@ class SignInWithGoogle {
   }
 }
 
+class SignInWithApple {
+  final AuthRepository _repository;
+
+  SignInWithApple(this._repository);
+
+  Future<Either<Failure, UserEntity>> execute() {
+    return _repository.signInWithApple();
+  }
+}
+
 class SignOut {
   final AuthRepository _repository;
 

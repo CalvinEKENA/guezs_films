@@ -16,6 +16,8 @@ abstract class AuthRepository {
 
   Future<Either<Failure, UserEntity>> signInWithGoogle();
 
+  Future<Either<Failure, UserEntity>> signInWithApple();
+
   Future<Either<Failure, void>> signOut();
 
   Stream<UserEntity?> get authStateChanges;

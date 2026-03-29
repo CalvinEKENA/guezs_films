@@ -34,6 +34,10 @@ final signInWithGoogleUseCaseProvider = Provider<SignInWithGoogle>((ref) {
   return SignInWithGoogle(ref.watch(authRepositoryProvider));
 });
 
+final signInWithAppleUseCaseProvider = Provider<SignInWithApple>((ref) {
+  return SignInWithApple(ref.watch(authRepositoryProvider));
+});
+
 final signOutProvider = Provider<SignOut>((ref) {
   return SignOut(ref.watch(authRepositoryProvider));
 });
@@ -93,6 +97,18 @@ class AuthController extends StateNotifier<AsyncValue<UserEntity?>> {
   Future<void> signInWithGoogle() async {
     state = const AsyncValue.loading();
     final useCase = _ref.read(signInWithGoogleUseCaseProvider);
+    final result = await useCase.execute();
+
+    result.fold(
+      (failure) =>
+          state = AsyncValue.error(failure.message, StackTrace.current),
+      (user) => state = AsyncValue.data(user),
+    );
+  }
+
+  Future<void> signInWithApple() async {
+    state = const AsyncValue.loading();
+    final useCase = _ref.read(signInWithAppleUseCaseProvider);
     final result = await useCase.execute();
 
     result.fold(
