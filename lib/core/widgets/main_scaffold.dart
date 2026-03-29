@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../routes/route_constants.dart';
 import '../theme/app_colors.dart';
+import 'offline_banner.dart';
 
 /// Main scaffold with bottom navigation bar
 /// Contains the shell for home, search, downloads, and profile tabs
@@ -12,7 +13,15 @@ class MainScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(body: child, bottomNavigationBar: _buildBottomNav(context));
+    return Scaffold(
+      body: Stack(
+        children: [
+          child,
+          const Positioned(top: 0, left: 0, right: 0, child: OfflineBanner()),
+        ],
+      ),
+      bottomNavigationBar: _buildBottomNav(context),
+    );
   }
 
   Widget _buildBottomNav(BuildContext context) {
@@ -49,11 +58,11 @@ class MainScaffold extends StatelessWidget {
               onTap: () => context.go(Routes.search),
             ),
             _NavItem(
-              icon: Icons.download_outlined,
-              activeIcon: Icons.download,
-              label: 'Téléchargés',
-              isActive: location == Routes.downloads,
-              onTap: () => context.go(Routes.downloads),
+              icon: Icons.bookmark_outline,
+              activeIcon: Icons.bookmark,
+              label: 'Ma liste',
+              isActive: location == Routes.favorites,
+              onTap: () => context.go(Routes.favorites),
             ),
             _NavItem(
               icon: Icons.person_outline,

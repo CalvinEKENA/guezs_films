@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/routes/route_constants.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -18,12 +19,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
   _Phase _phase = _Phase.s1;
   Timer? _timer;
 
-  // Couleur ambiante par écran
+  // Couleur ambiante par écran (Utilisation de l'Or Métallique pour la cohérence Premium)
   static const _ambientColors = {
-    _Phase.s1: AppColors.primary,
-    _Phase.s2: AppColors.accent,
-    _Phase.s3: Color(0xFF2563EB), // bleu profond
-    _Phase.s4: Color(0xFF059669), // vert profond
+    _Phase.s1: AppColors.accentSoft,
+    _Phase.s2: AppColors.accentSoft,
+    _Phase.s3: AppColors.accentSoft,
+    _Phase.s4: AppColors.accentSoft,
   };
 
   // Données des 4 écrans
@@ -116,8 +117,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 center: Alignment.center,
                 radius: 1.2,
                 colors: [
-                  (ambientColor ?? Colors.transparent)
-                      .withValues(alpha: 0.06),
+                  (ambientColor ?? Colors.transparent).withValues(alpha: 0.06),
                   Colors.black,
                 ],
               ),
@@ -131,13 +131,16 @@ class _OnboardingPageState extends State<OnboardingPage> {
               return FadeTransition(
                 opacity: animation,
                 child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, 0.04),
-                    end: Offset.zero,
-                  ).animate(CurvedAnimation(
-                    parent: animation,
-                    curve: Curves.easeOut,
-                  )),
+                  position:
+                      Tween<Offset>(
+                        begin: const Offset(0, 0.04),
+                        end: Offset.zero,
+                      ).animate(
+                        CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeOut,
+                        ),
+                      ),
                   child: child,
                 ),
               );
@@ -196,21 +199,21 @@ class _OnboardingScreenState extends State<_OnboardingScreen>
       vsync: this,
     );
 
-    _titleOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _anim, curve: const Interval(0.0, 0.6)),
-    );
-    _titleSlide = Tween<Offset>(
-      begin: const Offset(0, 0.12),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _anim,
-        curve: const Interval(0.0, 0.7, curve: Curves.easeOut),
-      ),
-    );
-    _subtitleOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _anim, curve: const Interval(0.3, 1.0)),
-    );
+    _titleOpacity = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _anim, curve: const Interval(0.0, 0.6)));
+    _titleSlide = Tween<Offset>(begin: const Offset(0, 0.12), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _anim,
+            curve: const Interval(0.0, 0.7, curve: Curves.easeOut),
+          ),
+        );
+    _subtitleOpacity = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _anim, curve: const Interval(0.3, 1.0)));
 
     _anim.forward();
   }
@@ -234,8 +237,8 @@ class _OnboardingScreenState extends State<_OnboardingScreen>
           Text(
             widget.data.number,
             style: AppTextStyles.labelSmall.copyWith(
-              color: widget.accentColor.withValues(alpha: 0.8),
-              letterSpacing: 3,
+              color: AppColors.accentSoft,
+              letterSpacing: 4,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -245,9 +248,9 @@ class _OnboardingScreenState extends State<_OnboardingScreen>
           // Ligne décorative colorée
           AnimatedContainer(
             duration: const Duration(milliseconds: 600),
-            width: 48,
-            height: 2,
-            color: widget.accentColor,
+            width: 60,
+            height: 1.5,
+            color: AppColors.accentSoft,
           ),
 
           const SizedBox(height: 32),
@@ -261,10 +264,11 @@ class _OnboardingScreenState extends State<_OnboardingScreen>
                 position: _titleSlide,
                 child: Text(
                   widget.data.title,
-                  style: AppTextStyles.displaySmall.copyWith(
+                  style: GoogleFonts.playfairDisplay(
+                    fontSize: 42,
                     color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    height: 1.15,
+                    fontWeight: FontWeight.w700,
+                    height: 1.1,
                     letterSpacing: -0.5,
                   ),
                 ),
@@ -282,8 +286,9 @@ class _OnboardingScreenState extends State<_OnboardingScreen>
               child: Text(
                 widget.data.subtitle,
                 style: AppTextStyles.bodyLarge.copyWith(
-                  color: AppColors.textTertiary,
-                  height: 1.7,
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w300,
+                  height: 1.6,
                 ),
               ),
             ),
@@ -324,22 +329,28 @@ class _LogoScreenState extends State<_LogoScreen>
 
     _opacity = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween(begin: 0.0, end: 1.0)
-            .chain(CurveTween(curve: Curves.easeIn)),
+        tween: Tween(
+          begin: 0.0,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeIn)),
         weight: 1200,
       ),
       TweenSequenceItem(tween: ConstantTween(1.0), weight: 1600),
       TweenSequenceItem(
-        tween: Tween(begin: 1.0, end: 0.0)
-            .chain(CurveTween(curve: Curves.easeOut)),
+        tween: Tween(
+          begin: 1.0,
+          end: 0.0,
+        ).chain(CurveTween(curve: Curves.easeOut)),
         weight: 1000,
       ),
     ]).animate(_anim);
 
     _scale = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween(begin: 0.92, end: 1.0)
-            .chain(CurveTween(curve: Curves.easeOut)),
+        tween: Tween(
+          begin: 0.92,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeOut)),
         weight: 1200,
       ),
       TweenSequenceItem(tween: ConstantTween(1.0), weight: 2600),

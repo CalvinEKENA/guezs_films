@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:guezs_films/features/favorites/data/models/favorite_movie_model.dart';
 import 'core/routes/app_router.dart';
+import 'core/constants/app_constants.dart';
 import 'core/theme/app_theme.dart';
 
 /// Guezs Films - Premium Streaming Application
@@ -16,6 +18,8 @@ void main() async {
 
   // Initialize Hive for local storage
   await Hive.initFlutter();
+  Hive.registerAdapter(FavoriteMovieModelAdapter());
+  await Hive.openBox<String>(AppConstants.searchHistoryBox);
 
   // Set preferred orientations
   await SystemChrome.setPreferredOrientations([

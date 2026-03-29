@@ -144,14 +144,14 @@ class _PromoCodeDialogState extends State<PromoCodeDialog> {
                             left: 0,
                             child: _buildInfluencerAvatar(
                               'Muriel Blanche',
-                              'assets/images/Muriel Blanche.jpg',
+                              'assets/images/muriel_blanche.jpg',
                             ),
                           ),
                           Positioned(
                             left: 50,
                             child: _buildInfluencerAvatar(
                               'Betty Christy',
-                              'assets/images/betty christy.jpg',
+                              'assets/images/betty_christy.jpg',
                             ),
                           ),
                         ],

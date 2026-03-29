@@ -1,17 +1,21 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:guezs_films/core/theme/app_colors.dart';
-import 'package:guezs_films/core/theme/app_text_styles.dart';
-import 'package:guezs_films/core/constants/api_constants.dart';
-import 'package:guezs_films/core/constants/app_constants.dart';
-import 'package:guezs_films/core/widgets/cached_image.dart';
-import 'package:guezs_films/core/widgets/shimmer_loading.dart';
-import 'package:guezs_films/features/home/presentation/providers/movie_providers.dart';
+import 'package:go_router/go_router.dart';
+import 'package:hive/hive.dart';
 
-/// Search page with real-time search and filters
+import '../../../../core/constants/app_constants.dart';
+import '../../../../core/domain/entities/film_entity.dart';
+import '../../../../core/domain/entities/series_entity.dart';
+import '../../../../core/providers/content_providers.dart';
+import '../../../../core/routes/route_constants.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/cached_image.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
+
 class SearchPage extends ConsumerStatefulWidget {
   const SearchPage({super.key});
 
@@ -25,35 +29,118 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   Timer? _debounceTimer;
 
   String _searchQuery = '';
-  final List<String> _searchHistory = ['Batman', 'Marvel', 'Comedy', 'Horror'];
-
+  List<String> _searchHistory = const [];
   String _selectedFilter = 'Tous';
-  final List<String> _filters = ['Tous', 'Films', 'Séries', 'Acteurs'];
+
+  static const List<String> _filters = ['Tous', 'Films', 'Séries', 'Acteurs'];
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(_onTextControllerChanged);
+    unawaited(_loadSearchHistory());
+  }
 
   @override
   void dispose() {
-    _searchController.dispose();
+    _searchController
+      ..removeListener(_onTextControllerChanged)
+      ..dispose();
     _focusNode.dispose();
     _debounceTimer?.cancel();
     super.dispose();
   }
 
+  void _onTextControllerChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Future<Box<String>> _getSearchHistoryBox() async {
+    if (Hive.isBoxOpen(AppConstants.searchHistoryBox)) {
+      return Hive.box<String>(AppConstants.searchHistoryBox);
+    }
+    return Hive.openBox<String>(AppConstants.searchHistoryBox);
+  }
+
+  Future<void> _loadSearchHistory() async {
+    final box = await _getSearchHistoryBox();
+    final items = box.values.toList().reversed.toList(growable: false);
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _searchHistory = items;
+    });
+  }
+
+  Future<void> _persistSearch(String query) async {
+    final normalized = query.trim();
+    if (normalized.length < 2) {
+      return;
+    }
+
+    final box = await _getSearchHistoryBox();
+    dynamic existingKey;
+
+    for (final key in box.keys) {
+      if (box.get(key) == normalized) {
+        existingKey = key;
+        break;
+      }
+    }
+
+    if (existingKey != null) {
+      await box.delete(existingKey);
+    }
+
+    await box.add(normalized);
+
+    while (box.length > AppConstants.searchHistoryLimit) {
+      await box.delete(box.keys.first);
+    }
+
+    await _loadSearchHistory();
+  }
+
+  Future<void> _removeHistoryItem(String query) async {
+    final box = await _getSearchHistoryBox();
+    dynamic targetKey;
+
+    for (final key in box.keys) {
+      if (box.get(key) == query) {
+        targetKey = key;
+        break;
+      }
+    }
+
+    if (targetKey != null) {
+      await box.delete(targetKey);
+      await _loadSearchHistory();
+    }
+  }
+
   void _onSearchChanged(String query) {
     _debounceTimer?.cancel();
+    final normalized = query.trim();
 
-    if (query.isEmpty) {
+    if (normalized.isEmpty) {
       setState(() {
         _searchQuery = '';
       });
       return;
     }
 
-    _debounceTimer = Timer(AppConstants.searchDebounce, () {
-      if (mounted) {
-        setState(() {
-          _searchQuery = query;
-        });
+    _debounceTimer = Timer(AppConstants.searchDebounce, () async {
+      if (!mounted) {
+        return;
       }
+
+      setState(() {
+        _searchQuery = normalized;
+      });
+      await _persistSearch(normalized);
     });
   }
 
@@ -64,11 +151,16 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     });
   }
 
-  void _onHistoryTap(String query) {
-    _searchController.text = query;
+  void _applySearch(String query) {
+    final normalized = query.trim();
+    _searchController.text = normalized;
+    _searchController.selection = TextSelection.fromPosition(
+      TextPosition(offset: normalized.length),
+    );
     setState(() {
-      _searchQuery = query;
+      _searchQuery = normalized;
     });
+    unawaited(_persistSearch(normalized));
   }
 
   @override
@@ -79,13 +171,8 @@ class _SearchPageState extends ConsumerState<SearchPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Search bar
             _buildSearchBar(),
-
-            // Filters
             _buildFilters(),
-
-            // Content
             Expanded(
               child: _searchQuery.isEmpty
                   ? _buildEmptyState()
@@ -116,11 +203,12 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                 controller: _searchController,
                 focusNode: _focusNode,
                 onChanged: _onSearchChanged,
+                onSubmitted: _applySearch,
                 style: AppTextStyles.bodyMedium.copyWith(
                   color: AppColors.textPrimary,
                 ),
                 decoration: InputDecoration(
-                  hintText: 'Rechercher des films, séries...',
+                  hintText: 'Rechercher un film ou une série',
                   hintStyle: AppTextStyles.bodyMedium.copyWith(
                     color: AppColors.textTertiary,
                   ),
@@ -184,8 +272,6 @@ class _SearchPageState extends ConsumerState<SearchPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 16),
-
-          // Search history
           if (_searchHistory.isNotEmpty) ...[
             Text(
               'Recherches récentes',
@@ -197,43 +283,18 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: _searchHistory.map((query) {
-                return GestureDetector(
-                  onTap: () => _onHistoryTap(query),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
+              children: _searchHistory
+                  .map(
+                    (query) => _HistoryChip(
+                      label: query,
+                      onTap: () => _applySearch(query),
+                      onRemove: () => _removeHistoryItem(query),
                     ),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceVariant,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.history,
-                          size: 16,
-                          color: AppColors.textTertiary,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          query,
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
+                  )
+                  .toList(growable: false),
             ),
             const SizedBox(height: 32),
           ],
-
-          // Popular searches
           Text(
             'Genres populaires',
             style: AppTextStyles.titleMedium.copyWith(
@@ -272,7 +333,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       itemBuilder: (context, index) {
         final (name, icon, color) = genres[index];
         return GestureDetector(
-              onTap: () => _onHistoryTap(name),
+              onTap: () => _applySearch(name),
               child: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -305,59 +366,300 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   }
 
   Widget _buildResults() {
-    final searchAsync = ref.watch(searchResultsProvider(_searchQuery));
+    if (_selectedFilter == 'Acteurs') {
+      return Center(
+        child: Text(
+          'Bientôt disponible',
+          style: AppTextStyles.bodyLarge.copyWith(
+            color: AppColors.textSecondary,
+          ),
+        ),
+      );
+    }
 
-    return searchAsync.when(
-      data: (movies) {
-        if (movies.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.search_off, size: 64, color: AppColors.textTertiary),
-                const SizedBox(height: 16),
-                Text(
-                  'Aucun résultat pour "$_searchQuery"',
-                  style: AppTextStyles.bodyLarge.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          );
+    // Recherche Firestore préfixe seulement.
+    // Pour une vraie recherche full-text, on pourra brancher Algolia ou Typesense plus tard.
+    final filmsAsync = ref.watch(searchFilmsProvider(_searchQuery));
+    final seriesAsync = ref.watch(searchSeriesProvider(_searchQuery));
+
+    if (_selectedFilter == 'Films') {
+      return _buildFilmResults(filmsAsync);
+    }
+    if (_selectedFilter == 'Séries') {
+      return _buildSeriesResults(seriesAsync);
+    }
+
+    return _buildAllResults(filmsAsync: filmsAsync, seriesAsync: seriesAsync);
+  }
+
+  Widget _buildFilmResults(AsyncValue<List<FilmEntity>> filmsAsync) {
+    return filmsAsync.when(
+      data: (films) {
+        if (films.isEmpty) {
+          return _buildNoResultsState();
         }
-
         return GridView.builder(
           padding: const EdgeInsets.all(16),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 3,
-            childAspectRatio: 2 / 3,
+            childAspectRatio: 0.58,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
           ),
-          itemCount: movies.length,
+          itemCount: films.length,
           itemBuilder: (context, index) {
-            final movie = movies[index];
-            return GestureDetector(
-                  onTap: () => context.push('/movie/${movie.id}'),
-                  child: MoviePoster(
-                    posterUrl: ApiConstants.posterMedium + movie.posterPath,
-                    width: double.infinity,
-                  ),
-                )
-                .animate()
-                .fadeIn(delay: (index * 50).ms)
-                .scale(begin: const Offset(0.9, 0.9));
+            final film = films[index];
+            return _SearchContentCard(
+              title: film.title,
+              posterUrl: film.posterUrl,
+              badge: 'Film',
+              onTap: () => context.push('${Routes.film}/${film.id}'),
+            );
           },
         );
       },
       loading: () => const ShimmerGrid(itemCount: 9),
-      error: (e, st) => Center(
-        child: Text(
-          'Erreur: $e',
-          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error),
+      error: (error, stackTrace) => _buildErrorState(),
+    );
+  }
+
+  Widget _buildSeriesResults(AsyncValue<List<SeriesEntity>> seriesAsync) {
+    return seriesAsync.when(
+      data: (seriesList) {
+        if (seriesList.isEmpty) {
+          return _buildNoResultsState();
+        }
+        return GridView.builder(
+          padding: const EdgeInsets.all(16),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            childAspectRatio: 0.58,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+          ),
+          itemCount: seriesList.length,
+          itemBuilder: (context, index) {
+            final series = seriesList[index];
+            return _SearchContentCard(
+              title: series.title,
+              posterUrl: series.posterUrl,
+              badge: 'Série',
+              onTap: () => context.push('${Routes.series}/${series.id}'),
+            );
+          },
+        );
+      },
+      loading: () => const ShimmerGrid(itemCount: 9),
+      error: (error, stackTrace) => _buildErrorState(),
+    );
+  }
+
+  Widget _buildAllResults({
+    required AsyncValue<List<FilmEntity>> filmsAsync,
+    required AsyncValue<List<SeriesEntity>> seriesAsync,
+  }) {
+    if (filmsAsync.isLoading || seriesAsync.isLoading) {
+      return const ShimmerGrid(itemCount: 9);
+    }
+    if (filmsAsync.hasError || seriesAsync.hasError) {
+      return _buildErrorState();
+    }
+
+    final combined = [
+      ...(filmsAsync.valueOrNull ?? const <FilmEntity>[]).map(
+        (film) => _CombinedSearchResult(
+          id: film.id,
+          title: film.title,
+          posterUrl: film.posterUrl,
+          type: 'Film',
+        ),
+      ),
+      ...(seriesAsync.valueOrNull ?? const <SeriesEntity>[]).map(
+        (series) => _CombinedSearchResult(
+          id: series.id,
+          title: series.title,
+          posterUrl: series.posterUrl,
+          type: 'Série',
+        ),
+      ),
+    ];
+
+    if (combined.isEmpty) {
+      return _buildNoResultsState();
+    }
+
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        childAspectRatio: 0.58,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+      ),
+      itemCount: combined.length,
+      itemBuilder: (context, index) {
+        final item = combined[index];
+        return _SearchContentCard(
+          title: item.title,
+          posterUrl: item.posterUrl,
+          badge: item.type,
+          onTap: () => context.push(
+            item.type == 'Film'
+                ? '${Routes.film}/${item.id}'
+                : '${Routes.series}/${item.id}',
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildNoResultsState() {
+    return Center(
+      child: Text(
+        'Aucun résultat pour "$_searchQuery".',
+        style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textSecondary),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Text(
+        'Une erreur est survenue pendant la recherche.',
+        style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+}
+
+class _HistoryChip extends StatelessWidget {
+  const _HistoryChip({
+    required this.label,
+    required this.onTap,
+    required this.onRemove,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceVariant,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.history, size: 16, color: AppColors.textTertiary),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(width: 6),
+            GestureDetector(
+              onTap: onRemove,
+              child: Icon(
+                Icons.close_rounded,
+                size: 16,
+                color: AppColors.textTertiary,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
+}
+
+class _SearchContentCard extends StatelessWidget {
+  const _SearchContentCard({
+    required this.title,
+    required this.posterUrl,
+    required this.badge,
+    required this.onTap,
+  });
+
+  final String title;
+  final String posterUrl;
+  final String badge;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: CachedImage(
+                    imageUrl: posterUrl,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.background.withValues(alpha: 0.82),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      badge,
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.accent,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.labelMedium.copyWith(
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(duration: 240.ms).scale(begin: const Offset(0.96, 0.96));
+  }
+}
+
+class _CombinedSearchResult {
+  const _CombinedSearchResult({
+    required this.id,
+    required this.title,
+    required this.posterUrl,
+    required this.type,
+  });
+
+  final String id;
+  final String title;
+  final String posterUrl;
+  final String type;
 }

@@ -94,7 +94,7 @@ class ShimmerContentRow extends StatelessWidget {
         const SizedBox(height: 12),
         // Content shimmer
         SizedBox(
-          height: itemWidth * 1.5 + 40,
+          height: itemWidth * 1.5 + 36,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             physics: const NeverScrollableScrollPhysics(),

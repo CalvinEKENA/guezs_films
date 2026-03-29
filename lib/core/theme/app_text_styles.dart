@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Guezs Films Typography System
-/// Using Poppins for display/headings and Inter for body text
+/// Using Poppins for display/headings and Montserrat for body text
 class AppTextStyles {
   AppTextStyles._();
 
@@ -85,22 +85,22 @@ class AppTextStyles {
   // Body Styles (Paragraphs, descriptions)
   // ─────────────────────────────────────────────────────────────────────────
 
-  static TextStyle bodyLarge = GoogleFonts.inter(
+  static TextStyle bodyLarge = GoogleFonts.montserrat(
+    fontSize: 18,
+    fontWeight: FontWeight.w400,
+    letterSpacing: 0.2,
+    height: 1.6,
+  );
+
+  static TextStyle bodyMedium = GoogleFonts.montserrat(
     fontSize: 16,
     fontWeight: FontWeight.w400,
-    letterSpacing: 0.5,
+    letterSpacing: 0.2,
     height: 1.5,
   );
 
-  static TextStyle bodyMedium = GoogleFonts.inter(
+  static TextStyle bodySmall = GoogleFonts.montserrat(
     fontSize: 14,
-    fontWeight: FontWeight.w400,
-    letterSpacing: 0.25,
-    height: 1.5,
-  );
-
-  static TextStyle bodySmall = GoogleFonts.inter(
-    fontSize: 12,
     fontWeight: FontWeight.w400,
     letterSpacing: 0.4,
     height: 1.5,
@@ -110,21 +110,21 @@ class AppTextStyles {
   // Label Styles (Buttons, chips, badges)
   // ─────────────────────────────────────────────────────────────────────────
 
-  static TextStyle labelLarge = GoogleFonts.inter(
+  static TextStyle labelLarge = GoogleFonts.montserrat(
     fontSize: 14,
     fontWeight: FontWeight.w600,
-    letterSpacing: 0.1,
+    letterSpacing: 1.2,
     height: 1.4,
   );
 
-  static TextStyle labelMedium = GoogleFonts.inter(
+  static TextStyle labelMedium = GoogleFonts.montserrat(
     fontSize: 12,
     fontWeight: FontWeight.w500,
     letterSpacing: 0.5,
     height: 1.4,
   );
 
-  static TextStyle labelSmall = GoogleFonts.inter(
+  static TextStyle labelSmall = GoogleFonts.montserrat(
     fontSize: 11,
     fontWeight: FontWeight.w500,
     letterSpacing: 0.5,
@@ -135,7 +135,7 @@ class AppTextStyles {
   // Caption Styles (Metadata, timestamps, helpers)
   // ─────────────────────────────────────────────────────────────────────────
 
-  static TextStyle caption = GoogleFonts.inter(
+  static TextStyle caption = GoogleFonts.montserrat(
     fontSize: 12,
     fontWeight: FontWeight.w300,
     letterSpacing: 0.4,

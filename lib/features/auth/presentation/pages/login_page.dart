@@ -109,256 +109,277 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
           // Content
           SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: 40),
+            child: Column(
+              children: [
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Logo section
+                        _buildLogo()
+                            .animate()
+                            .fadeIn(duration: 500.ms)
+                            .slideY(begin: -0.2, end: 0),
 
-                  // Logo section
-                  _buildLogo()
-                      .animate()
-                      .fadeIn(duration: 500.ms)
-                      .slideY(begin: -0.2, end: 0),
+                        const SizedBox(height: 32),
 
-                  const SizedBox(height: 48),
-
-                  // Form card with glassmorphism
-                  GlassCard(
-                        blur: 20,
-                        opacity: 0.08,
-                        padding: const EdgeInsets.all(24),
-                        borderRadius: BorderRadius.circular(24),
-                        child: Form(
-                          key: _formKey,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              // Title
-                              Text(
-                                _isLogin ? 'Connexion' : 'Inscription',
-                                style: AppTextStyles.headlineLarge.copyWith(
-                                  color: AppColors.textPrimary,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-
-                              const SizedBox(height: 8),
-
-                              Text(
-                                _isLogin
-                                    ? 'Bienvenue ! Connectez-vous pour continuer.'
-                                    : 'Créez votre compte Guezs Films.',
-                                style: AppTextStyles.bodyMedium.copyWith(
-                                  color: AppColors.textSecondary,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-
-                              const SizedBox(height: 32),
-
-                              // Name field (only for signup)
-                              if (!_isLogin) ...[
-                                TextFormField(
-                                  controller: _nameController,
-                                  style: AppTextStyles.bodyMedium.copyWith(
-                                    color: AppColors.textPrimary,
-                                  ),
-                                  decoration: const InputDecoration(
-                                    labelText: 'Nom complet',
-                                    prefixIcon: Icon(
-                                      Icons.person_outline,
-                                      color: AppColors.textTertiary,
+                        // Form card with glassmorphism
+                        GlassCard(
+                              blur: 20,
+                              opacity: 0.08,
+                              padding: const EdgeInsets.all(24),
+                              borderRadius: BorderRadius.circular(24),
+                              child: Form(
+                                key: _formKey,
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    // Title
+                                    Text(
+                                      _isLogin ? 'Connexion' : 'Inscription',
+                                      style: AppTextStyles.headlineLarge
+                                          .copyWith(
+                                            color: AppColors.textPrimary,
+                                          ),
+                                      textAlign: TextAlign.center,
                                     ),
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                              ],
 
-                              // Email field
-                              TextFormField(
-                                controller: _emailController,
-                                keyboardType: TextInputType.emailAddress,
-                                style: AppTextStyles.bodyMedium.copyWith(
-                                  color: AppColors.textPrimary,
-                                ),
-                                decoration: const InputDecoration(
-                                  labelText: 'Email',
-                                  prefixIcon: Icon(
-                                    Icons.email_outlined,
-                                    color: AppColors.textTertiary,
-                                  ),
-                                ),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Entrez votre email';
-                                  }
-                                  if (!value.contains('@')) {
-                                    return 'Email invalide';
-                                  }
-                                  return null;
-                                },
-                              ),
+                                    const SizedBox(height: 8),
 
-                              const SizedBox(height: 16),
-
-                              // Password field
-                              TextFormField(
-                                controller: _passwordController,
-                                obscureText: _obscurePassword,
-                                style: AppTextStyles.bodyMedium.copyWith(
-                                  color: AppColors.textPrimary,
-                                ),
-                                decoration: InputDecoration(
-                                  labelText: 'Mot de passe',
-                                  prefixIcon: const Icon(
-                                    Icons.lock_outlined,
-                                    color: AppColors.textTertiary,
-                                  ),
-                                  suffixIcon: IconButton(
-                                    icon: Icon(
-                                      _obscurePassword
-                                          ? Icons.visibility_outlined
-                                          : Icons.visibility_off_outlined,
-                                      color: AppColors.textTertiary,
-                                    ),
-                                    onPressed: () {
-                                      setState(
-                                        () => _obscurePassword =
-                                            !_obscurePassword,
-                                      );
-                                    },
-                                  ),
-                                ),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Entrez votre mot de passe';
-                                  }
-                                  if (value.length < 6) {
-                                    return 'Minimum 6 caractères';
-                                  }
-                                  return null;
-                                },
-                              ),
-
-                              if (_isLogin) ...[
-                                const SizedBox(height: 8),
-                                Align(
-                                  alignment: Alignment.centerRight,
-                                  child: TextButton(
-                                    onPressed: () {
-                                      // TODO: Forgot password
-                                    },
-                                    child: Text(
-                                      'Mot de passe oublié ?',
-                                      style: AppTextStyles.labelMedium.copyWith(
-                                        color: AppColors.primary,
+                                    Text(
+                                      _isLogin
+                                          ? 'Bienvenue ! Connectez-vous pour continuer.'
+                                          : 'Créez votre compte Guezs Films.',
+                                      style: AppTextStyles.bodyMedium.copyWith(
+                                        color: AppColors.textSecondary,
                                       ),
+                                      textAlign: TextAlign.center,
                                     ),
-                                  ),
-                                ),
-                              ],
 
-                              const SizedBox(height: 24),
+                                    const SizedBox(height: 32),
 
-                              // Submit button
-                              GradientButton(
-                                text: _isLogin ? 'Se connecter' : "S'inscrire",
-                                isLoading: isLoading,
-                                onPressed: _submit,
-                              ),
-
-                              const SizedBox(height: 24),
-
-                              // Divider
-                              Row(
-                                children: [
-                                  const Expanded(
-                                    child: Divider(color: AppColors.divider),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                    ),
-                                    child: Text(
-                                      'ou',
-                                      style: AppTextStyles.caption.copyWith(
-                                        color: AppColors.textTertiary,
+                                    // Name field (only for signup)
+                                    if (!_isLogin) ...[
+                                      TextFormField(
+                                        controller: _nameController,
+                                        style: AppTextStyles.bodyMedium
+                                            .copyWith(
+                                              color: AppColors.textPrimary,
+                                            ),
+                                        decoration: const InputDecoration(
+                                          labelText: 'Nom complet',
+                                          prefixIcon: Icon(
+                                            Icons.person_outline,
+                                            color: AppColors.textTertiary,
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                  ),
-                                  const Expanded(
-                                    child: Divider(color: AppColors.divider),
-                                  ),
-                                ],
-                              ),
+                                      const SizedBox(height: 16),
+                                    ],
 
-                              const SizedBox(height: 24),
-
-                              // Social login buttons
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  if (Platform.isAndroid || Platform.isWindows)
-                                    _SocialButton(
-                                      icon: Icons.g_mobiledata_rounded,
-                                      onTap: () {
-                                        ref
-                                            .read(
-                                              authControllerProvider.notifier,
-                                            )
-                                            .signInWithGoogle();
+                                    // Email field
+                                    TextFormField(
+                                      controller: _emailController,
+                                      keyboardType: TextInputType.emailAddress,
+                                      style: AppTextStyles.bodyMedium.copyWith(
+                                        color: AppColors.textPrimary,
+                                      ),
+                                      decoration: const InputDecoration(
+                                        labelText: 'Email',
+                                        prefixIcon: Icon(
+                                          Icons.email_outlined,
+                                          color: AppColors.textTertiary,
+                                        ),
+                                      ),
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return 'Entrez votre email';
+                                        }
+                                        if (!value.contains('@')) {
+                                          return 'Email invalide';
+                                        }
+                                        return null;
                                       },
                                     ),
-                                  if ((Platform.isAndroid ||
-                                          Platform.isWindows) &&
-                                      (Platform.isIOS || Platform.isWindows))
-                                    const SizedBox(width: 16),
-                                  if (Platform.isIOS || Platform.isWindows)
-                                    _SocialButton(
-                                      icon: Icons.apple,
-                                      onTap: () {
-                                        // TODO: Apple sign in
+
+                                    const SizedBox(height: 16),
+
+                                    // Password field
+                                    TextFormField(
+                                      controller: _passwordController,
+                                      obscureText: _obscurePassword,
+                                      style: AppTextStyles.bodyMedium.copyWith(
+                                        color: AppColors.textPrimary,
+                                      ),
+                                      decoration: InputDecoration(
+                                        labelText: 'Mot de passe',
+                                        prefixIcon: const Icon(
+                                          Icons.lock_outlined,
+                                          color: AppColors.textTertiary,
+                                        ),
+                                        suffixIcon: IconButton(
+                                          icon: Icon(
+                                            _obscurePassword
+                                                ? Icons.visibility_outlined
+                                                : Icons.visibility_off_outlined,
+                                            color: AppColors.textTertiary,
+                                          ),
+                                          onPressed: () {
+                                            setState(
+                                              () => _obscurePassword =
+                                                  !_obscurePassword,
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return 'Entrez votre mot de passe';
+                                        }
+                                        if (value.length < 6) {
+                                          return 'Minimum 6 caractères';
+                                        }
+                                        return null;
                                       },
                                     ),
-                                ],
+
+                                    if (_isLogin) ...[
+                                      const SizedBox(height: 8),
+                                      Align(
+                                        alignment: Alignment.centerRight,
+                                        child: TextButton(
+                                          onPressed: () {
+                                            context.push(Routes.forgotPassword);
+                                          },
+                                          child: Text(
+                                            'Mot de passe oublié ?',
+                                            style: AppTextStyles.labelMedium
+                                                .copyWith(
+                                                  color: AppColors.primary,
+                                                ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+
+                                    const SizedBox(height: 24),
+
+                                    // Submit button
+                                    GradientButton(
+                                      text: _isLogin
+                                          ? 'Se connecter'
+                                          : "S'inscrire",
+                                      isLoading: isLoading,
+                                      onPressed: _submit,
+                                    ),
+
+                                    const SizedBox(height: 24),
+
+                                    // Divider
+                                    Row(
+                                      children: [
+                                        const Expanded(
+                                          child: Divider(
+                                            color: AppColors.divider,
+                                          ),
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                          ),
+                                          child: Text(
+                                            'ou',
+                                            style: AppTextStyles.caption
+                                                .copyWith(
+                                                  color: AppColors.textTertiary,
+                                                ),
+                                          ),
+                                        ),
+                                        const Expanded(
+                                          child: Divider(
+                                            color: AppColors.divider,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+
+                                    const SizedBox(height: 24),
+
+                                    // Social login buttons
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        if (Platform.isAndroid ||
+                                            Platform.isWindows)
+                                          _SocialButton(
+                                            assetPath:
+                                                'assets/icons/google.png',
+                                            onTap: () {
+                                              ref
+                                                  .read(
+                                                    authControllerProvider
+                                                        .notifier,
+                                                  )
+                                                  .signInWithGoogle();
+                                            },
+                                          ),
+                                        if ((Platform.isAndroid ||
+                                                Platform.isWindows) &&
+                                            (Platform.isIOS ||
+                                                Platform.isWindows))
+                                          const SizedBox(width: 16),
+                                        if (Platform.isIOS ||
+                                            Platform.isWindows)
+                                          _SocialButton(
+                                            assetPath: 'assets/icons/apple.png',
+                                            onTap: () {
+                                              // TODO: Apple sign in
+                                            },
+                                          ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ],
-                          ),
-                        ),
-                      )
-                      .animate()
-                      .fadeIn(duration: 500.ms, delay: 200.ms)
-                      .slideY(begin: 0.1, end: 0),
+                            )
+                            .animate()
+                            .fadeIn(duration: 500.ms, delay: 200.ms)
+                            .slideY(begin: 0.1, end: 0),
 
-                  const SizedBox(height: 24),
+                        const SizedBox(height: 24),
 
-                  // Toggle login/signup
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        _isLogin
-                            ? "Pas encore de compte ?"
-                            : "Déjà un compte ?",
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColors.textSecondary,
+                        // Toggle login/signup
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              _isLogin
+                                  ? "Pas encore de compte ?"
+                                  : "Déjà un compte ?",
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: _toggleMode,
+                              child: Text(
+                                _isLogin ? "S'inscrire" : 'Se connecter',
+                                style: AppTextStyles.labelLarge.copyWith(
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      TextButton(
-                        onPressed: _toggleMode,
-                        child: Text(
-                          _isLogin ? "S'inscrire" : 'Se connecter',
-                          style: AppTextStyles.labelLarge.copyWith(
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ],
@@ -367,28 +388,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   Widget _buildLogo() {
-    return Column(
-      children: [
-        Image.asset('assets/icons/launch.png', width: 100, height: 100),
-        const SizedBox(height: 16),
-        Text(
-          'GUEZS FILMS',
-          style: AppTextStyles.headlineMedium.copyWith(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 4,
-          ),
-        ),
-      ],
+    return Center(
+      child: Image.asset('assets/icons/logo.png', width: 100, height: 100),
     );
   }
 }
 
 class _SocialButton extends StatelessWidget {
-  final IconData icon;
+  final String assetPath;
   final VoidCallback onTap;
 
-  const _SocialButton({required this.icon, required this.onTap});
+  const _SocialButton({required this.assetPath, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -402,7 +412,7 @@ class _SocialButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppColors.border, width: 1),
         ),
-        child: Icon(icon, color: AppColors.textPrimary, size: 28),
+        child: Center(child: Image.asset(assetPath, width: 24, height: 24)),
       ),
     );
   }

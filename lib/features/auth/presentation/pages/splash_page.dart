@@ -40,15 +40,16 @@ class _SplashPageState extends State<SplashPage>
       ),
     );
 
-    _glowOpacity = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 0.0, end: 0.7), weight: 1),
-      TweenSequenceItem(tween: Tween(begin: 0.7, end: 0.0), weight: 1),
-    ]).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.55, 0.82, curve: Curves.easeInOut),
-      ),
-    );
+    _glowOpacity =
+        TweenSequence<double>([
+          TweenSequenceItem(tween: Tween(begin: 0.0, end: 0.7), weight: 1),
+          TweenSequenceItem(tween: Tween(begin: 0.7, end: 0.0), weight: 1),
+        ]).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: const Interval(0.55, 0.82, curve: Curves.easeInOut),
+          ),
+        );
 
     _screenOpacity = Tween<double>(begin: 1.0, end: 0.0).animate(
       CurvedAnimation(
@@ -96,14 +97,16 @@ class _SplashPageState extends State<SplashPage>
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.accent
-                                    .withValues(alpha: _glowOpacity.value * 0.6),
+                                color: AppColors.accent.withValues(
+                                  alpha: _glowOpacity.value * 0.6,
+                                ),
                                 blurRadius: 80,
                                 spreadRadius: 20,
                               ),
                               BoxShadow(
-                                color: AppColors.primary
-                                    .withValues(alpha: _glowOpacity.value * 0.3),
+                                color: AppColors.primary.withValues(
+                                  alpha: _glowOpacity.value * 0.3,
+                                ),
                                 blurRadius: 120,
                                 spreadRadius: 40,
                               ),
@@ -114,7 +117,7 @@ class _SplashPageState extends State<SplashPage>
                       Opacity(
                         opacity: _logoOpacity.value,
                         child: Image.asset(
-                          'assets/icons/icon.png',
+                          'assets/icons/icon2.png',
                           width: 160,
                           height: 160,
                           fit: BoxFit.contain,
@@ -127,9 +130,7 @@ class _SplashPageState extends State<SplashPage>
                 // Light beam overlay
                 CustomPaint(
                   size: size,
-                  painter: _LightBeamPainter(
-                    beamPosition: _beamPosition.value,
-                  ),
+                  painter: _LightBeamPainter(beamPosition: _beamPosition.value),
                 ),
               ],
             ),
@@ -183,6 +184,5 @@ class _LightBeamPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_LightBeamPainter old) =>
-      old.beamPosition != beamPosition;
+  bool shouldRepaint(_LightBeamPainter old) => old.beamPosition != beamPosition;
 }

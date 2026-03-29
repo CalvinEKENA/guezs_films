@@ -144,7 +144,7 @@ class AppConstants {
   static const String watchHistoryBox = 'watch_history_box';
   static const String favoritesBox = 'favorites_box';
   static const String downloadBox = 'download_box';
-  static const String searchHistoryBox = 'search_history_box';
+  static const String searchHistoryBox = 'search_history';
 
   // ─────────────────────────────────────────────────────────────────────────
   // Content Categories

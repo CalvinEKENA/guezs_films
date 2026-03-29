@@ -6,11 +6,14 @@ import '../../features/auth/presentation/providers/auth_providers.dart';
 import 'package:guezs_films/features/auth/presentation/pages/splash_page.dart';
 import 'package:guezs_films/features/auth/presentation/pages/onboarding_page.dart';
 import 'package:guezs_films/features/auth/presentation/pages/login_page.dart';
+import 'package:guezs_films/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:guezs_films/features/home/presentation/pages/home_page.dart';
 import 'package:guezs_films/features/search/presentation/pages/search_page.dart';
+import 'package:guezs_films/features/favorites/presentation/pages/favorites_page.dart';
 import 'package:guezs_films/features/profile/presentation/pages/profile_page.dart';
 import 'package:guezs_films/features/details/presentation/pages/details_page.dart';
 import 'package:guezs_films/features/player/presentation/pages/player_page.dart';
+import 'package:guezs_films/features/series/presentation/pages/series_details_page.dart';
 import 'package:guezs_films/core/widgets/main_scaffold.dart';
 import 'package:guezs_films/core/routes/route_constants.dart';
 
@@ -44,6 +47,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       final isAuthRoute =
           state.uri.path == Routes.login ||
+          state.uri.path == Routes.forgotPassword ||
           state.uri.path == Routes.onboarding ||
           state.uri.path == Routes.splash;
 
@@ -96,6 +100,18 @@ class AppRouter {
       ),
     ),
 
+    GoRoute(
+      path: Routes.forgotPassword,
+      name: 'forgot-password',
+      pageBuilder: (context, state) => CustomTransitionPage(
+        key: state.pageKey,
+        child: const ForgotPasswordPage(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    ),
+
     // ─────────────────────────────────────────────────────────────────────
     // Main App Shell (Bottom Navigation)
     // ─────────────────────────────────────────────────────────────────────
@@ -118,18 +134,10 @@ class AppRouter {
         ),
 
         GoRoute(
-          path: Routes.downloads,
-          name: 'downloads',
-          pageBuilder: (context, state) => NoTransitionPage(
-            child: Scaffold(
-              body: Center(
-                child: Text(
-                  'Téléchargements',
-                  style: Theme.of(context).textTheme.headlineMedium,
-                ),
-              ),
-            ),
-          ),
+          path: Routes.favorites,
+          name: 'favorites',
+          pageBuilder: (context, state) =>
+              const NoTransitionPage(child: FavoritesPage()),
         ),
 
         GoRoute(
@@ -145,13 +153,16 @@ class AppRouter {
     // Detail & Player Routes (Full screen, outside shell)
     // ─────────────────────────────────────────────────────────────────────
     GoRoute(
-      path: '${Routes.movie}/:id',
-      name: 'movie-details',
+      path: '${Routes.film}/:id',
+      name: 'film-details',
       pageBuilder: (context, state) {
-        final id = int.tryParse(state.pathParameters['id'] ?? '0') ?? 0;
-        return MaterialPage(
+        final id = state.pathParameters['id'] ?? '';
+        return CustomTransitionPage(
           key: state.pageKey,
-          child: DetailsPage(contentId: id, contentType: ContentType.movie),
+          child: DetailsPage(filmId: id),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
         );
       },
     ),
@@ -160,10 +171,13 @@ class AppRouter {
       path: '${Routes.series}/:id',
       name: 'series-details',
       pageBuilder: (context, state) {
-        final id = int.tryParse(state.pathParameters['id'] ?? '0') ?? 0;
-        return MaterialPage(
+        final id = state.pathParameters['id'] ?? '';
+        return CustomTransitionPage(
           key: state.pageKey,
-          child: DetailsPage(contentId: id, contentType: ContentType.series),
+          child: SeriesDetailsPage(seriesId: id),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
         );
       },
     ),

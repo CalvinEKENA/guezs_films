@@ -1,0 +1,162 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+import 'models/episode_model.dart';
+import 'models/film_model.dart';
+import 'models/season_model.dart';
+import 'models/series_model.dart';
+
+abstract class FirebaseContentDataSource {
+  Future<List<FilmModel>> getFilms();
+  Future<List<FilmModel>> getFeaturedFilms();
+  Future<List<FilmModel>> getNewFilms();
+  Future<FilmModel> getFilmById(String id);
+  Future<List<SeriesModel>> getSeries();
+  Future<List<SeriesModel>> getFeaturedSeries();
+  Future<SeriesModel> getSeriesById(String id);
+  Future<List<SeasonModel>> getSeasons(String seriesId);
+  Future<List<EpisodeModel>> getEpisodes(String seriesId, String seasonId);
+  Future<List<FilmModel>> searchFilms(String query);
+  Future<List<SeriesModel>> searchSeries(String query);
+}
+
+class FirebaseContentDataSourceImpl implements FirebaseContentDataSource {
+  FirebaseContentDataSourceImpl(this._firestore);
+
+  final FirebaseFirestore _firestore;
+
+  CollectionReference<Map<String, dynamic>> get _filmsCollection =>
+      _firestore.collection('films');
+
+  CollectionReference<Map<String, dynamic>> get _seriesCollection =>
+      _firestore.collection('series');
+
+  @override
+  Future<List<FilmModel>> getFilms() async {
+    final snapshot = await _filmsCollection
+        .orderBy('createdAt', descending: true)
+        .get();
+    return snapshot.docs.map(FilmModel.fromFirestore).toList(growable: false);
+  }
+
+  @override
+  Future<List<FilmModel>> getFeaturedFilms() async {
+    final snapshot = await _filmsCollection
+        .where('isFeatured', isEqualTo: true)
+        .orderBy('createdAt', descending: true)
+        .get();
+    return snapshot.docs.map(FilmModel.fromFirestore).toList(growable: false);
+  }
+
+  @override
+  Future<List<FilmModel>> getNewFilms() async {
+    final snapshot = await _filmsCollection
+        .where('isNew', isEqualTo: true)
+        .orderBy('createdAt', descending: true)
+        .get();
+    return snapshot.docs.map(FilmModel.fromFirestore).toList(growable: false);
+  }
+
+  @override
+  Future<FilmModel> getFilmById(String id) async {
+    final doc = await _filmsCollection.doc(id).get();
+    if (!doc.exists) {
+      throw StateError('Film introuvable: $id');
+    }
+    return FilmModel.fromFirestore(doc);
+  }
+
+  @override
+  Future<List<SeriesModel>> getSeries() async {
+    final snapshot = await _seriesCollection
+        .orderBy('createdAt', descending: true)
+        .get();
+    return snapshot.docs.map(SeriesModel.fromFirestore).toList(growable: false);
+  }
+
+  @override
+  Future<List<SeriesModel>> getFeaturedSeries() async {
+    final snapshot = await _seriesCollection
+        .where('isFeatured', isEqualTo: true)
+        .orderBy('createdAt', descending: true)
+        .get();
+    return snapshot.docs.map(SeriesModel.fromFirestore).toList(growable: false);
+  }
+
+  @override
+  Future<SeriesModel> getSeriesById(String id) async {
+    final doc = await _seriesCollection.doc(id).get();
+    if (!doc.exists) {
+      throw StateError('Série introuvable: $id');
+    }
+    return SeriesModel.fromFirestore(doc);
+  }
+
+  @override
+  Future<List<SeasonModel>> getSeasons(String seriesId) async {
+    final snapshot = await _seriesCollection
+        .doc(seriesId)
+        .collection('seasons')
+        .orderBy('seasonNumber')
+        .get();
+
+    return snapshot.docs
+        .map((doc) => SeasonModel.fromFirestore(seriesId: seriesId, doc: doc))
+        .toList(growable: false);
+  }
+
+  @override
+  Future<List<EpisodeModel>> getEpisodes(
+    String seriesId,
+    String seasonId,
+  ) async {
+    final snapshot = await _seriesCollection
+        .doc(seriesId)
+        .collection('seasons')
+        .doc(seasonId)
+        .collection('episodes')
+        .orderBy('episodeNumber')
+        .get();
+
+    return snapshot.docs
+        .map(
+          (doc) => EpisodeModel.fromFirestore(
+            seriesId: seriesId,
+            seasonId: seasonId,
+            doc: doc,
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  @override
+  Future<List<FilmModel>> searchFilms(String query) async {
+    final normalizedQuery = query.trim();
+    if (normalizedQuery.isEmpty) {
+      return const [];
+    }
+
+    final snapshot = await _filmsCollection
+        .orderBy('title')
+        .where('title', isGreaterThanOrEqualTo: normalizedQuery)
+        .where('title', isLessThanOrEqualTo: '$normalizedQuery\uf8ff')
+        .get();
+
+    return snapshot.docs.map(FilmModel.fromFirestore).toList(growable: false);
+  }
+
+  @override
+  Future<List<SeriesModel>> searchSeries(String query) async {
+    final normalizedQuery = query.trim();
+    if (normalizedQuery.isEmpty) {
+      return const [];
+    }
+
+    final snapshot = await _seriesCollection
+        .orderBy('title')
+        .where('title', isGreaterThanOrEqualTo: normalizedQuery)
+        .where('title', isLessThanOrEqualTo: '$normalizedQuery\uf8ff')
+        .get();
+
+    return snapshot.docs.map(SeriesModel.fromFirestore).toList(growable: false);
+  }
+}
