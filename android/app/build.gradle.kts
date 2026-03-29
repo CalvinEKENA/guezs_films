@@ -72,5 +72,5 @@ flutter {
 }
 
 dependencies {
-    coreLibraryDesugaring("com.android.tools.build:desugaring:2.1.5")
+    coreLibraryDesugaring("com.android.tools.desugar_jdk_libs:2.1.4")
 }
