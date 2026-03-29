@@ -10,6 +10,7 @@ import 'package:guezs_films/features/auth/presentation/pages/forgot_password_pag
 import 'package:guezs_films/features/home/presentation/pages/home_page.dart';
 import 'package:guezs_films/features/search/presentation/pages/search_page.dart';
 import 'package:guezs_films/features/favorites/presentation/pages/favorites_page.dart';
+import 'package:guezs_films/features/downloads/presentation/pages/downloads_page.dart';
 import 'package:guezs_films/features/profile/presentation/pages/profile_page.dart';
 import 'package:guezs_films/features/details/presentation/pages/details_page.dart';
 import 'package:guezs_films/features/player/presentation/pages/player_page.dart';
@@ -138,6 +139,13 @@ class AppRouter {
           name: 'favorites',
           pageBuilder: (context, state) =>
               const NoTransitionPage(child: FavoritesPage()),
+        ),
+
+        GoRoute(
+          path: Routes.downloads,
+          name: 'downloads',
+          pageBuilder: (context, state) =>
+              const NoTransitionPage(child: DownloadsPage()),
         ),
 
         GoRoute(

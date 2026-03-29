@@ -21,4 +21,10 @@ abstract class FavoritesRepository {
     required String id,
     required String contentType,
   });
+
+  /// Synchronise les favoris locaux avec le Cloud (fusion par date)
+  Future<Either<Failure, void>> syncWithCloud();
+
+  /// S'abonne aux changements temps réel depuis le cloud et met à jour Hive
+  Stream<Either<Failure, void>> watchCloudUpdates();
 }

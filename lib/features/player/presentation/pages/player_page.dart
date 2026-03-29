@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
@@ -5,8 +6,9 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/widgets/glass_card.dart';
 
-/// Custom video player page with controls
+/// Custom video player page with controls and multi-track support
 class PlayerPage extends StatefulWidget {
   final String videoUrl;
   final String title;
@@ -29,6 +31,9 @@ class _PlayerPageState extends State<PlayerPage> {
   bool _showControls = true;
   bool _isPlaying = false;
   bool _isBuffering = false;
+  bool _isLocked = false;
+  double _playbackSpeed = 1.0;
+  String _selectedAudioTrack = 'Français (Original)';
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
 
@@ -45,14 +50,17 @@ class _PlayerPageState extends State<PlayerPage> {
   }
 
   Future<void> _initializePlayer() async {
-    // Using a sample video for demo
-    _controller = VideoPlayerController.networkUrl(
-      Uri.parse(
-        widget.videoUrl.isNotEmpty
-            ? widget.videoUrl
-            : 'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4',
-      ),
-    );
+    final videoPath = widget.videoUrl.isNotEmpty 
+        ? widget.videoUrl 
+        : 'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4';
+
+    final isLocalPath = videoPath.startsWith('/') || videoPath.contains(r':\');
+
+    if (isLocalPath) {
+      _controller = VideoPlayerController.file(File(videoPath));
+    } else {
+      _controller = VideoPlayerController.networkUrl(Uri.parse(videoPath));
+    }
 
     try {
       await _controller.initialize();
@@ -99,28 +107,40 @@ class _PlayerPageState extends State<PlayerPage> {
   }
 
   void _seekForward() {
-    final newPosition =
-        _position + const Duration(seconds: AppConstants.doubleTapSeek);
+    if (_isLocked) return;
+    final newPosition = _position + const Duration(seconds: AppConstants.doubleTapSeek);
     _controller.seekTo(newPosition);
   }
 
   void _seekBackward() {
-    final newPosition =
-        _position - const Duration(seconds: AppConstants.doubleTapSeek);
+    if (_isLocked) return;
+    final newPosition = _position - const Duration(seconds: AppConstants.doubleTapSeek);
     _controller.seekTo(newPosition.isNegative ? Duration.zero : newPosition);
   }
 
   void _onTapScreen() {
+    if (_isLocked) {
+      setState(() => _showControls = !_showControls);
+      return;
+    }
+
     setState(() => _showControls = !_showControls);
 
     // Auto-hide controls after delay
     if (_showControls && _isPlaying) {
       Future.delayed(AppConstants.playerControlsHideDelay, () {
-        if (mounted && _isPlaying) {
+        if (mounted && _isPlaying && !_isLocked) {
           setState(() => _showControls = false);
         }
       });
     }
+  }
+
+  void _toggleLock() {
+    setState(() {
+      _isLocked = !_isLocked;
+      if (_isLocked) _showControls = false;
+    });
   }
 
   @override
@@ -130,6 +150,7 @@ class _PlayerPageState extends State<PlayerPage> {
       body: GestureDetector(
         onTap: _onTapScreen,
         onDoubleTapDown: (details) {
+          if (_isLocked) return;
           final screenWidth = MediaQuery.of(context).size.width;
           if (details.globalPosition.dx < screenWidth / 2) {
             _seekBackward();
@@ -158,11 +179,14 @@ class _PlayerPageState extends State<PlayerPage> {
               ),
 
             // Controls overlay
-            AnimatedOpacity(
-              opacity: _showControls ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 200),
-              child: _buildControlsOverlay(),
-            ),
+            if (!_isLocked)
+              AnimatedOpacity(
+                opacity: _showControls ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 200),
+                child: _buildControlsOverlay(),
+              )
+            else
+              _buildLockedOverlay(),
           ],
         ),
       ),
@@ -180,11 +204,34 @@ class _PlayerPageState extends State<PlayerPage> {
             const SizedBox(height: 16),
             Text(
               'Chargement...',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
-              ),
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLockedOverlay() {
+    return AnimatedOpacity(
+      opacity: _showControls ? 1.0 : 0.0,
+      duration: const Duration(milliseconds: 200),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: GestureDetector(
+            onTap: _toggleLock,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.5),
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.accent, width: 1),
+              ),
+              child: const Icon(Icons.lock_open, color: AppColors.accent, size: 28),
+            ),
+          ),
         ),
       ),
     );
@@ -208,13 +255,8 @@ class _PlayerPageState extends State<PlayerPage> {
       child: SafeArea(
         child: Column(
           children: [
-            // Top bar
             _buildTopBar(),
-
-            // Center controls
             Expanded(child: _buildCenterControls()),
-
-            // Bottom bar with progress
             _buildBottomBar(),
           ],
         ),
@@ -227,15 +269,11 @@ class _PlayerPageState extends State<PlayerPage> {
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          // Back button
           IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.white),
             onPressed: () => Navigator.pop(context),
           ),
-
           const SizedBox(width: 8),
-
-          // Title
           Expanded(
             child: Text(
               widget.title,
@@ -244,14 +282,15 @@ class _PlayerPageState extends State<PlayerPage> {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-
-          // Settings
+          // Lock Button
+          IconButton(
+            icon: const Icon(Icons.lock_outline, color: Colors.white),
+            onPressed: _toggleLock,
+          ),
           IconButton(
             icon: const Icon(Icons.settings, color: Colors.white),
             onPressed: _showSettings,
           ),
-
-          // Cast
           IconButton(
             icon: const Icon(Icons.cast, color: Colors.white),
             onPressed: () {},
@@ -265,16 +304,12 @@ class _PlayerPageState extends State<PlayerPage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Rewind
         IconButton(
           iconSize: 48,
           icon: const Icon(Icons.replay_10, color: Colors.white),
           onPressed: _seekBackward,
         ),
-
         const SizedBox(width: 32),
-
-        // Play/Pause
         GestureDetector(
           onTap: _togglePlayPause,
           child: Container(
@@ -283,18 +318,14 @@ class _PlayerPageState extends State<PlayerPage> {
             decoration: BoxDecoration(
               color: AppColors.primary.withValues(alpha: 0.9),
               shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(color: AppColors.primary.withValues(alpha: 0.4), blurRadius: 20),
+              ],
             ),
-            child: Icon(
-              _isPlaying ? Icons.pause : Icons.play_arrow,
-              color: Colors.white,
-              size: 48,
-            ),
+            child: Icon(_isPlaying ? Icons.pause : Icons.play_arrow, color: Colors.white, size: 48),
           ),
         ),
-
         const SizedBox(width: 32),
-
-        // Forward
         IconButton(
           iconSize: 48,
           icon: const Icon(Icons.forward_10, color: Colors.white),
@@ -309,99 +340,35 @@ class _PlayerPageState extends State<PlayerPage> {
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          // Progress bar
-          SliderTheme(
-            data: SliderTheme.of(context).copyWith(
-              trackHeight: 4,
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-              overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
-            ),
-            child: Slider(
-              value: _position.inMilliseconds.toDouble(),
-              min: 0,
-              max: _duration.inMilliseconds.toDouble().clamp(
-                1,
-                double.infinity,
-              ),
-              activeColor: AppColors.primary,
-              inactiveColor: Colors.white.withValues(alpha: 0.3),
-              onChanged: (value) {
-                _controller.seekTo(Duration(milliseconds: value.toInt()));
-              },
-            ),
-          ),
-
-          // Time display
+          _buildProgressBar(),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  _formatDuration(_position),
-                  style: AppTextStyles.caption.copyWith(color: Colors.white),
-                ),
-                Text(
-                  _formatDuration(_duration),
-                  style: AppTextStyles.caption.copyWith(color: Colors.white),
-                ),
+                Text(_formatDuration(_position), style: AppTextStyles.caption.copyWith(color: Colors.white)),
+                Text(_formatDuration(_duration), style: AppTextStyles.caption.copyWith(color: Colors.white)),
               ],
             ),
           ),
-
           const SizedBox(height: 8),
-
-          // Bottom controls
           Row(
             children: [
-              // Volume
-              IconButton(
-                icon: const Icon(
-                  Icons.volume_up,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                onPressed: () {},
-              ),
-
+              IconButton(icon: const Icon(Icons.volume_up, color: Colors.white, size: 20), onPressed: () {}),
               const Spacer(),
-
-              // Playback speed
+              // Speed selector
               TextButton(
-                onPressed: () {},
-                child: Text(
-                  '1x',
-                  style: AppTextStyles.labelMedium.copyWith(
-                    color: Colors.white,
-                  ),
-                ),
+                onPressed: _showSpeedSelector,
+                child: Text('${_playbackSpeed}x', style: AppTextStyles.labelMedium.copyWith(color: Colors.white)),
               ),
-
-              // Subtitles
+              // Multi-Audio Tracks
               IconButton(
-                icon: const Icon(
-                  Icons.subtitles,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                onPressed: () {},
+                icon: const Icon(Icons.audiotrack, color: Colors.white, size: 20),
+                onPressed: _showAudioTrackSelector,
               ),
-
-              // Quality
-              IconButton(
-                icon: const Icon(Icons.hd, color: Colors.white, size: 20),
-                onPressed: _showQualitySelector,
-              ),
-
-              // Fullscreen
-              IconButton(
-                icon: const Icon(
-                  Icons.fullscreen,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                onPressed: () {},
-              ),
+              IconButton(icon: const Icon(Icons.subtitles, color: Colors.white, size: 20), onPressed: () {}),
+              IconButton(icon: const Icon(Icons.hd, color: Colors.white, size: 20), onPressed: _showQualitySelector),
+              IconButton(icon: const Icon(Icons.fullscreen, color: Colors.white, size: 20), onPressed: () {}),
             ],
           ),
         ],
@@ -409,100 +376,119 @@ class _PlayerPageState extends State<PlayerPage> {
     ).animate(target: _showControls ? 1 : 0).fadeIn(duration: 200.ms);
   }
 
-  void _showSettings() {
+  Widget _buildProgressBar() {
+    return SliderTheme(
+      data: SliderTheme.of(context).copyWith(
+        trackHeight: 4,
+        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+        overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+        activeTrackColor: AppColors.primary,
+        inactiveTrackColor: Colors.white.withValues(alpha: 0.3),
+        thumbColor: AppColors.primary,
+      ),
+      child: Slider(
+        value: _position.inMilliseconds.toDouble(),
+        min: 0,
+        max: _duration.inMilliseconds.toDouble().clamp(1, double.infinity),
+        onChanged: (value) {
+          _controller.seekTo(Duration(milliseconds: value.toInt()));
+        },
+      ),
+    );
+  }
+
+  void _showSpeedSelector() {
+    final speeds = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.bottomSheet,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
+      backgroundColor: Colors.transparent,
+      builder: (context) => GlassCard(
+        blur: 20,
+        opacity: 0.1,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ListTile(
-              leading: const Icon(Icons.speed, color: AppColors.textPrimary),
-              title: Text(
-                'Vitesse de lecture',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              trailing: Text(
-                '1x',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Text('Vitesse de lecture', style: AppTextStyles.titleMedium),
             ),
-            ListTile(
-              leading: const Icon(
-                Icons.subtitles,
-                color: AppColors.textPrimary,
-              ),
-              title: Text(
-                'Sous-titres',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              trailing: Text(
-                'Désactivés',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.hd, color: AppColors.textPrimary),
-              title: Text(
-                'Qualité vidéo',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              trailing: Text(
-                'Auto',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ),
+            ...speeds.map((speed) => ListTile(
+                  title: Text('${speed}x', style: AppTextStyles.bodyMedium),
+                  trailing: speed == _playbackSpeed ? const Icon(Icons.check, color: AppColors.primary) : null,
+                  onTap: () {
+                    setState(() {
+                      _playbackSpeed = speed;
+                      _controller.setPlaybackSpeed(speed);
+                    });
+                    Navigator.pop(context);
+                  },
+                )),
+            const SizedBox(height: 24),
           ],
         ),
       ),
     );
   }
 
+  void _showAudioTrackSelector() {
+    final tracks = ['Français (Original)', 'Anglais', 'Espagnol', 'Wolof'];
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => GlassCard(
+        blur: 20,
+        opacity: 0.1,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Text('Piste Audio (Langue)', style: AppTextStyles.titleMedium),
+            ),
+            ...tracks.map((track) => ListTile(
+                  leading: const Icon(Icons.audiotrack, color: AppColors.textTertiary),
+                  title: Text(track, style: AppTextStyles.bodyMedium),
+                  trailing: track == _selectedAudioTrack ? const Icon(Icons.check, color: AppColors.primary) : null,
+                  onTap: () {
+                    setState(() => _selectedAudioTrack = track);
+                    Navigator.pop(context);
+                  },
+                )),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showSettings() {
+    _showAudioTrackSelector();
+  }
+
   void _showQualitySelector() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.bottomSheet,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
+      backgroundColor: Colors.transparent,
+      builder: (context) => GlassCard(
+        blur: 20,
+        opacity: 0.1,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Qualité vidéo',
-              style: AppTextStyles.titleMedium.copyWith(
-                color: AppColors.textPrimary,
-              ),
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text('Qualité vidéo', style: AppTextStyles.titleMedium),
             ),
-            const SizedBox(height: 16),
-            ...AppConstants.videoQualities.map(
-              (quality) => ListTile(
-                title: Text(
-                  quality,
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                trailing: quality == 'Auto'
-                    ? const Icon(Icons.check, color: AppColors.primary)
-                    : null,
-                onTap: () => Navigator.pop(context),
-              ),
-            ),
+            ...AppConstants.videoQualities.map((quality) => ListTile(
+                  title: Text(quality, style: AppTextStyles.bodyMedium),
+                  trailing: quality == 'Auto' ? const Icon(Icons.check, color: AppColors.primary) : null,
+                  onTap: () => Navigator.pop(context),
+                )),
+            const SizedBox(height: 24),
           ],
         ),
       ),
@@ -510,10 +496,10 @@ class _PlayerPageState extends State<PlayerPage> {
   }
 
   String _formatDuration(Duration duration) {
+    if (duration == Duration.zero) return '00:00';
     final hours = duration.inHours;
     final minutes = duration.inMinutes.remainder(60);
     final seconds = duration.inSeconds.remainder(60);
-
     if (hours > 0) {
       return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
     }

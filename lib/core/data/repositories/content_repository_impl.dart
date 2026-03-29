@@ -62,4 +62,12 @@ class ContentRepositoryImpl implements ContentRepository {
   @override
   Future<List<SeriesEntity>> searchSeries(String query) =>
       _dataSource.searchSeries(query);
+
+  @override
+  Future<List<FilmEntity>> getFilmsByGenre(String genre) =>
+      _dataSource.getFilmsByGenre(genre);
+
+  @override
+  Future<List<SeriesEntity>> getSeriesByGenre(String genre) =>
+      _dataSource.getSeriesByGenre(genre);
 }

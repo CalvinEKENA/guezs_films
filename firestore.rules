@@ -1,25 +1,64 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
+    
+    // ─── Helpers ─────────────────────────────────────────────────────────────
+    
+    // Check if user is authenticated
     function isSignedIn() {
       return request.auth != null;
     }
 
-    match /films/{filmId} {
-      allow read: if isSignedIn();
+    // Check if user has an admin role via Custom Claims
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.admin == true;
     }
 
+    // Check if the user is accessing their own data
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // ─── Catalog (Public contents) ───────────────────────────────────────────
+    
+    // Films: Everyone can read, only admin can manage
+    match /films/{filmId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Series: Everyone can read, only admin can manage
     match /series/{seriesId} {
       allow read: if isSignedIn();
+      allow write: if isAdmin();
 
       match /seasons/{seasonId} {
         allow read: if isSignedIn();
+        allow write: if isAdmin();
 
         match /episodes/{episodeId} {
           allow read: if isSignedIn();
+          allow write: if isAdmin();
         }
       }
+    }
+
+    // ─── User Personal Data (Sync features) ──────────────────────────────────
+    
+    match /users/{userId} {
+      // User can manage their profile, admin can too
+      allow read, write: if isOwner(userId) || isAdmin();
+
+      // Cloud Favorites Synchronization
+      match /favorites/{favId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+    
+    // ─── Search analytics / metadata (Optional future use) ───────────────────
+    match /search_metadata/{docId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
     }
   }
 }

@@ -65,6 +65,13 @@ class MainScaffold extends StatelessWidget {
               onTap: () => context.go(Routes.favorites),
             ),
             _NavItem(
+              icon: Icons.download_for_offline_outlined,
+              activeIcon: Icons.download_for_offline,
+              label: 'Téléchargements',
+              isActive: location == Routes.downloads,
+              onTap: () => context.go(Routes.downloads),
+            ),
+            _NavItem(
               icon: Icons.person_outline,
               activeIcon: Icons.person,
               label: 'Profil',

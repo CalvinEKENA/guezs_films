@@ -17,6 +17,8 @@ abstract class FirebaseContentDataSource {
   Future<List<EpisodeModel>> getEpisodes(String seriesId, String seasonId);
   Future<List<FilmModel>> searchFilms(String query);
   Future<List<SeriesModel>> searchSeries(String query);
+  Future<List<FilmModel>> getFilmsByGenre(String genre);
+  Future<List<SeriesModel>> getSeriesByGenre(String genre);
 }
 
 class FirebaseContentDataSourceImpl implements FirebaseContentDataSource {
@@ -157,6 +159,24 @@ class FirebaseContentDataSourceImpl implements FirebaseContentDataSource {
         .where('title', isLessThanOrEqualTo: '$normalizedQuery\uf8ff')
         .get();
 
+    return snapshot.docs.map(SeriesModel.fromFirestore).toList(growable: false);
+  }
+
+  @override
+  Future<List<FilmModel>> getFilmsByGenre(String genre) async {
+    final snapshot = await _filmsCollection
+        .where('genres', arrayContains: genre)
+        .orderBy('createdAt', descending: true)
+        .get();
+    return snapshot.docs.map(FilmModel.fromFirestore).toList(growable: false);
+  }
+
+  @override
+  Future<List<SeriesModel>> getSeriesByGenre(String genre) async {
+    final snapshot = await _seriesCollection
+        .where('genres', arrayContains: genre)
+        .orderBy('createdAt', descending: true)
+        .get();
     return snapshot.docs.map(SeriesModel.fromFirestore).toList(growable: false);
   }
 }

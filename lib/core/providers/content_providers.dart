@@ -89,3 +89,17 @@ final searchSeriesProvider = FutureProvider.family<List<SeriesEntity>, String>((
 ) async {
   return ref.watch(contentRepositoryProvider).searchSeries(query);
 });
+
+final filmsByGenreProvider = FutureProvider.family<List<FilmEntity>, String>((
+  ref,
+  genre,
+) async {
+  return ref.watch(contentRepositoryProvider).getFilmsByGenre(genre);
+});
+
+final seriesByGenreProvider = FutureProvider.family<List<SeriesEntity>, String>((
+  ref,
+  genre,
+) async {
+  return ref.watch(contentRepositoryProvider).getSeriesByGenre(genre);
+});

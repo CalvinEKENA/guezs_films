@@ -29,10 +29,22 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   Timer? _debounceTimer;
 
   String _searchQuery = '';
+  String? _selectedGenre;
   List<String> _searchHistory = const [];
   String _selectedFilter = 'Tous';
 
-  static const List<String> _filters = ['Tous', 'Films', 'Séries', 'Acteurs'];
+  static const List<String> _filters = ['Tous', 'Films', 'Séries'];
+  
+  static const List<String> _genres = [
+    'Action',
+    'Comédie',
+    'Drame',
+    'Horreur',
+    'Romance',
+    'Sci-Fi',
+    'Thriller',
+    'Animation',
+  ];
 
   @override
   void initState() {
@@ -67,9 +79,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   Future<void> _loadSearchHistory() async {
     final box = await _getSearchHistoryBox();
     final items = box.values.toList().reversed.toList(growable: false);
-    if (!mounted) {
-      return;
-    }
+    if (!mounted) return;
     setState(() {
       _searchHistory = items;
     });
@@ -77,9 +87,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
 
   Future<void> _persistSearch(String query) async {
     final normalized = query.trim();
-    if (normalized.length < 2) {
-      return;
-    }
+    if (normalized.length < 2) return;
 
     final box = await _getSearchHistoryBox();
     dynamic existingKey;
@@ -132,11 +140,15 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       return;
     }
 
-    _debounceTimer = Timer(AppConstants.searchDebounce, () async {
-      if (!mounted) {
-        return;
-      }
+    // Si on tape une recherche textuelle, on désélectionne le genre
+    if (_selectedGenre != null) {
+      setState(() {
+        _selectedGenre = null;
+      });
+    }
 
+    _debounceTimer = Timer(AppConstants.searchDebounce, () async {
+      if (!mounted) return;
       setState(() {
         _searchQuery = normalized;
       });
@@ -148,6 +160,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     _searchController.clear();
     setState(() {
       _searchQuery = '';
+      _selectedGenre = null;
     });
   }
 
@@ -159,8 +172,21 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     );
     setState(() {
       _searchQuery = normalized;
+      _selectedGenre = null;
     });
     unawaited(_persistSearch(normalized));
+  }
+
+  void _toggleGenre(String genre) {
+    setState(() {
+      if (_selectedGenre == genre) {
+        _selectedGenre = null;
+      } else {
+        _selectedGenre = genre;
+        _searchQuery = '';
+        _searchController.clear();
+      }
+    });
   }
 
   @override
@@ -173,8 +199,9 @@ class _SearchPageState extends ConsumerState<SearchPage> {
           children: [
             _buildSearchBar(),
             _buildFilters(),
+            _buildGenreChips(),
             Expanded(
-              child: _searchQuery.isEmpty
+              child: (_searchQuery.isEmpty && _selectedGenre == null)
                   ? _buildEmptyState()
                   : _buildResults(),
             ),
@@ -208,7 +235,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                   color: AppColors.textPrimary,
                 ),
                 decoration: InputDecoration(
-                  hintText: 'Rechercher un film ou une série',
+                  hintText: 'Rechercher un titre...',
                   hintStyle: AppTextStyles.bodyMedium.copyWith(
                     color: AppColors.textTertiary,
                   ),
@@ -217,7 +244,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                 ),
               ),
             ),
-            if (_searchController.text.isNotEmpty)
+            if (_searchController.text.isNotEmpty || _selectedGenre != null)
               IconButton(
                 icon: const Icon(Icons.close, size: 20),
                 color: AppColors.textTertiary,
@@ -247,9 +274,10 @@ class _SearchPageState extends ConsumerState<SearchPage> {
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: isSelected
-                    ? AppColors.primary
-                    : AppColors.surfaceVariant,
+                color: isSelected ? AppColors.primary : Colors.transparent,
+                border: Border.all(
+                  color: isSelected ? AppColors.primary : AppColors.border,
+                ),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
@@ -261,6 +289,54 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildGenreChips() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12, bottom: 8),
+      child: SizedBox(
+        height: 36,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          itemCount: _genres.length,
+          separatorBuilder: (context, index) => const SizedBox(width: 8),
+          itemBuilder: (context, index) {
+            final genre = _genres[index];
+            final isSelected = genre == _selectedGenre;
+
+            return GestureDetector(
+              onTap: () => _toggleGenre(genre),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.accent.withValues(alpha: 0.2) : AppColors.surfaceVariant,
+                  border: Border.all(
+                    color: isSelected ? AppColors.accent : Colors.transparent,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Text(
+                      genre,
+                      style: AppTextStyles.labelMedium.copyWith(
+                        color: isSelected ? AppColors.accent : AppColors.textSecondary,
+                      ),
+                    ),
+                    if (isSelected) ...[
+                      const SizedBox(width: 4),
+                      const Icon(Icons.close, size: 14, color: AppColors.accent),
+                    ]
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -295,92 +371,42 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             ),
             const SizedBox(height: 32),
           ],
-          Text(
-            'Genres populaires',
-            style: AppTextStyles.titleMedium.copyWith(
-              color: AppColors.textPrimary,
+          
+          Center(
+            child: Column(
+              children: [
+                const SizedBox(height: 48),
+                Icon(Icons.search, size: 64, color: AppColors.textTertiary.withValues(alpha: 0.5)),
+                const SizedBox(height: 16),
+                Text(
+                  'Découvrez de nouveaux films',
+                  style: AppTextStyles.titleMedium.copyWith(color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Cherchez par titre ou explorez nos genres ci-dessus.',
+                  style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textTertiary),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 16),
-          _buildGenreGrid(),
+          )
         ],
       ),
     );
   }
 
-  Widget _buildGenreGrid() {
-    final genres = [
-      ('Action', Icons.local_fire_department, AppColors.genreAction),
-      ('Comédie', Icons.sentiment_very_satisfied, AppColors.genreComedy),
-      ('Drame', Icons.theater_comedy, AppColors.genreDrama),
-      ('Horreur', Icons.nightlight_round, AppColors.genreHorror),
-      ('Romance', Icons.favorite, AppColors.genreRomance),
-      ('Sci-Fi', Icons.rocket_launch, AppColors.genreSciFi),
-      ('Thriller', Icons.visibility, AppColors.genreThriller),
-      ('Animation', Icons.animation, AppColors.genreAnimation),
-    ];
-
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 2.5,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-      ),
-      itemCount: genres.length,
-      itemBuilder: (context, index) {
-        final (name, icon, color) = genres[index];
-        return GestureDetector(
-              onTap: () => _applySearch(name),
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [color, color.withValues(alpha: 0.7)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(icon, color: Colors.white, size: 24),
-                    const SizedBox(width: 8),
-                    Text(
-                      name,
-                      style: AppTextStyles.labelLarge.copyWith(
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
-            .animate()
-            .fadeIn(delay: (index * 50).ms)
-            .scale(begin: const Offset(0.9, 0.9));
-      },
-    );
-  }
-
   Widget _buildResults() {
-    if (_selectedFilter == 'Acteurs') {
-      return Center(
-        child: Text(
-          'Bientôt disponible',
-          style: AppTextStyles.bodyLarge.copyWith(
-            color: AppColors.textSecondary,
-          ),
-        ),
-      );
-    }
+    final query = _selectedGenre ?? _searchQuery;
+    final isGenreSearch = _selectedGenre != null;
 
-    // Recherche Firestore préfixe seulement.
-    // Pour une vraie recherche full-text, on pourra brancher Algolia ou Typesense plus tard.
-    final filmsAsync = ref.watch(searchFilmsProvider(_searchQuery));
-    final seriesAsync = ref.watch(searchSeriesProvider(_searchQuery));
+    final filmsAsync = isGenreSearch 
+        ? ref.watch(filmsByGenreProvider(query))
+        : ref.watch(searchFilmsProvider(query));
+        
+    final seriesAsync = isGenreSearch
+        ? ref.watch(seriesByGenreProvider(query))
+        : ref.watch(searchSeriesProvider(query));
 
     if (_selectedFilter == 'Films') {
       return _buildFilmResults(filmsAsync);
@@ -395,27 +421,9 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   Widget _buildFilmResults(AsyncValue<List<FilmEntity>> filmsAsync) {
     return filmsAsync.when(
       data: (films) {
-        if (films.isEmpty) {
-          return _buildNoResultsState();
-        }
-        return GridView.builder(
-          padding: const EdgeInsets.all(16),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            childAspectRatio: 0.58,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-          ),
-          itemCount: films.length,
-          itemBuilder: (context, index) {
-            final film = films[index];
-            return _SearchContentCard(
-              title: film.title,
-              posterUrl: film.posterUrl,
-              badge: 'Film',
-              onTap: () => context.push('${Routes.film}/${film.id}'),
-            );
-          },
+        if (films.isEmpty) return _buildNoResultsState();
+        return _buildResultsGrid(
+          films.map((f) => _CombinedSearchResult(id: f.id, title: f.title, posterUrl: f.posterUrl, type: 'Film')).toList()
         );
       },
       loading: () => const ShimmerGrid(itemCount: 9),
@@ -426,27 +434,9 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   Widget _buildSeriesResults(AsyncValue<List<SeriesEntity>> seriesAsync) {
     return seriesAsync.when(
       data: (seriesList) {
-        if (seriesList.isEmpty) {
-          return _buildNoResultsState();
-        }
-        return GridView.builder(
-          padding: const EdgeInsets.all(16),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            childAspectRatio: 0.58,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-          ),
-          itemCount: seriesList.length,
-          itemBuilder: (context, index) {
-            final series = seriesList[index];
-            return _SearchContentCard(
-              title: series.title,
-              posterUrl: series.posterUrl,
-              badge: 'Série',
-              onTap: () => context.push('${Routes.series}/${series.id}'),
-            );
-          },
+        if (seriesList.isEmpty) return _buildNoResultsState();
+        return _buildResultsGrid(
+          seriesList.map((s) => _CombinedSearchResult(id: s.id, title: s.title, posterUrl: s.posterUrl, type: 'Série')).toList()
         );
       },
       loading: () => const ShimmerGrid(itemCount: 9),
@@ -467,27 +457,19 @@ class _SearchPageState extends ConsumerState<SearchPage> {
 
     final combined = [
       ...(filmsAsync.valueOrNull ?? const <FilmEntity>[]).map(
-        (film) => _CombinedSearchResult(
-          id: film.id,
-          title: film.title,
-          posterUrl: film.posterUrl,
-          type: 'Film',
-        ),
+        (film) => _CombinedSearchResult(id: film.id, title: film.title, posterUrl: film.posterUrl, type: 'Film'),
       ),
       ...(seriesAsync.valueOrNull ?? const <SeriesEntity>[]).map(
-        (series) => _CombinedSearchResult(
-          id: series.id,
-          title: series.title,
-          posterUrl: series.posterUrl,
-          type: 'Série',
-        ),
+        (series) => _CombinedSearchResult(id: series.id, title: series.title, posterUrl: series.posterUrl, type: 'Série'),
       ),
     ];
 
-    if (combined.isEmpty) {
-      return _buildNoResultsState();
-    }
+    if (combined.isEmpty) return _buildNoResultsState();
 
+    return _buildResultsGrid(combined);
+  }
+
+  Widget _buildResultsGrid(List<_CombinedSearchResult> items) {
     return GridView.builder(
       padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -496,9 +478,9 @@ class _SearchPageState extends ConsumerState<SearchPage> {
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
       ),
-      itemCount: combined.length,
+      itemCount: items.length,
       itemBuilder: (context, index) {
-        final item = combined[index];
+        final item = items[index];
         return _SearchContentCard(
           title: item.title,
           posterUrl: item.posterUrl,
@@ -516,7 +498,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   Widget _buildNoResultsState() {
     return Center(
       child: Text(
-        'Aucun résultat pour "$_searchQuery".',
+        'Aucun résultat trouvé.',
         style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textSecondary),
         textAlign: TextAlign.center,
       ),
@@ -626,7 +608,7 @@ class _SearchContentCard extends StatelessWidget {
                     child: Text(
                       badge,
                       style: AppTextStyles.caption.copyWith(
-                        color: AppColors.accent,
+                        color: badge == 'Film' ? AppColors.accent : AppColors.primary,
                         fontWeight: FontWeight.w700,
                       ),
                     ),

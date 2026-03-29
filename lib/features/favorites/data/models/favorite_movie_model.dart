@@ -21,13 +21,21 @@ class FavoriteMovieModel extends HiveObject {
   @HiveField(4)
   final String addedAt;
 
+  @HiveField(5, defaultValue: false)
+  final bool isDeleted;
+
+  @HiveField(6)
+  final String updatedAt;
+
   FavoriteMovieModel({
     required this.id,
     required this.title,
     required this.posterPath,
     required this.contentType,
     required this.addedAt,
-  });
+    this.isDeleted = false,
+    String? updatedAt,
+  }) : updatedAt = updatedAt ?? addedAt;
 
   String get storageKey => '$contentType:$id';
 
@@ -39,6 +47,8 @@ class FavoriteMovieModel extends HiveObject {
       posterPath: entity.posterPath,
       contentType: entity.contentType,
       addedAt: entity.addedAt,
+      isDeleted: entity.isDeleted,
+      updatedAt: entity.updatedAt,
     );
   }
 
@@ -50,6 +60,34 @@ class FavoriteMovieModel extends HiveObject {
       posterPath: posterPath,
       contentType: contentType,
       addedAt: addedAt,
+      isDeleted: isDeleted,
+      updatedAt: updatedAt,
+    );
+  }
+
+  /// Conversion vers Map pour Firestore
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'title': title,
+      'posterPath': posterPath,
+      'contentType': contentType,
+      'addedAt': addedAt,
+      'isDeleted': isDeleted,
+      'updatedAt': updatedAt,
+    };
+  }
+
+  /// Factory depuis Firestore Map
+  factory FavoriteMovieModel.fromMap(Map<String, dynamic> map) {
+    return FavoriteMovieModel(
+      id: map['id'] as String,
+      title: map['title'] as String,
+      posterPath: map['posterPath'] as String,
+      contentType: map['contentType'] as String,
+      addedAt: map['addedAt'] as String,
+      isDeleted: map['isDeleted'] as bool? ?? false,
+      updatedAt: map['updatedAt'] as String?,
     );
   }
 }

@@ -12,6 +12,8 @@ import '../../../../core/widgets/gradient_button.dart';
 import '../../../../core/widgets/promo_code_dialog.dart';
 import '../../../../features/favorites/domain/entities/favorite_movie.dart';
 import '../../../../features/favorites/presentation/providers/favorites_providers.dart';
+import '../../../../features/downloads/domain/entities/download_item.dart';
+import '../../../../features/downloads/presentation/providers/download_providers.dart';
 
 class DetailsPage extends ConsumerStatefulWidget {
   const DetailsPage({super.key, required this.filmId});
@@ -130,7 +132,9 @@ class _DetailsPageState extends ConsumerState<DetailsPage> {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 8),
+                          _buildDownloadButton(ref, film),
+                          const SizedBox(width: 8),
                           _buildActionButton(
                             icon: isFavorite ? Icons.check : Icons.add,
                             label: 'Favori',
@@ -346,6 +350,7 @@ class _DetailsPageState extends ConsumerState<DetailsPage> {
     required IconData icon,
     required String label,
     required VoidCallback onTap,
+    Color? color,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -355,17 +360,17 @@ class _DetailsPageState extends ConsumerState<DetailsPage> {
         decoration: BoxDecoration(
           color: AppColors.surfaceVariant,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: color ?? AppColors.border),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: AppColors.textPrimary, size: 20),
+            Icon(icon, color: color ?? AppColors.textPrimary, size: 20),
             const SizedBox(height: 2),
             Text(
               label,
               style: AppTextStyles.caption.copyWith(
-                color: AppColors.textSecondary,
+                color: color ?? AppColors.textSecondary,
               ),
             ),
           ],
@@ -396,6 +401,36 @@ class _DetailsPageState extends ConsumerState<DetailsPage> {
           extra: {'videoUrl': videoUrl, 'title': title, 'posterUrl': posterUrl},
         );
       },
+    );
+  }
+
+  Widget _buildDownloadButton(WidgetRef ref, dynamic film) {
+    final downloadState = ref.watch(downloadStateProvider(film.id)).valueOrNull;
+    final isDownloading = downloadState?.status == DownloadStatus.downloading;
+    final isCompleted = downloadState?.status == DownloadStatus.completed;
+
+    return _buildActionButton(
+      icon: isCompleted ? Icons.download_done : (isDownloading ? Icons.hourglass_empty : Icons.download_rounded),
+      label: isCompleted ? 'Terminé' : (isDownloading ? '${(downloadState!.progress * 100).toInt()}%' : 'D/L'),
+      onTap: () {
+        if (isCompleted || isDownloading) return;
+        ref.read(downloadServiceProvider).startDownload(
+              DownloadItem(
+                id: film.id,
+                title: film.title,
+                posterPath: film.posterUrl,
+                videoUrl: film.videoUrl,
+                localPath: '',
+              ),
+            );
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Le téléchargement a démarré.'),
+            backgroundColor: AppColors.primary,
+          ),
+        );
+      },
+      color: isCompleted ? AppColors.accent : (isDownloading ? AppColors.info : null),
     );
   }
 }

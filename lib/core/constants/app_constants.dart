@@ -202,4 +202,16 @@ class AppConstants {
     '480p SD',
     '360p',
   ];
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Premium Avatars
+  // ─────────────────────────────────────────────────────────────────────────
+
+  static const List<String> premiumAvatars = [
+    'https://raw.githubusercontent.com/CalvinEKENA/house-films/main/assets/avatars/avatar_gold.png',
+    'https://raw.githubusercontent.com/CalvinEKENA/house-films/main/assets/avatars/avatar_silver.png',
+    'https://raw.githubusercontent.com/CalvinEKENA/house-films/main/assets/avatars/avatar_red.png',
+    'https://raw.githubusercontent.com/CalvinEKENA/house-films/main/assets/avatars/avatar_blue.png',
+    'https://raw.githubusercontent.com/CalvinEKENA/house-films/main/assets/avatars/avatar_kids.png',
+  ];
 }
