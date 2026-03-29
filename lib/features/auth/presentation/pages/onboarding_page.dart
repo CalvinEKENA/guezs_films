@@ -1,14 +1,12 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
-import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import '../../../../core/routes/route_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../../../core/widgets/gradient_button.dart';
 
-/// Onboarding page with animated slides
-/// Introduces the app features before login
+enum _Phase { s1, s2, s3, s4, logo, done }
+
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
 
@@ -17,219 +15,378 @@ class OnboardingPage extends StatefulWidget {
 }
 
 class _OnboardingPageState extends State<OnboardingPage> {
-  final PageController _pageController = PageController();
-  int _currentPage = 0;
+  _Phase _phase = _Phase.s1;
+  Timer? _timer;
 
-  final List<_OnboardingSlide> _slides = [
-    _OnboardingSlide(
-      icon: Icons.movie_filter_rounded,
-      title: 'Films & Séries Illimités',
-      description:
-          'Découvrez nos productions originales exclusives et le meilleur du cinéma camerounais, pour une expérience unique signée Guezs Films.',
-      gradient: [AppColors.primary, AppColors.primaryDark],
+  // Couleur ambiante par écran
+  static const _ambientColors = {
+    _Phase.s1: AppColors.primary,
+    _Phase.s2: AppColors.accent,
+    _Phase.s3: Color(0xFF2563EB), // bleu profond
+    _Phase.s4: Color(0xFF059669), // vert profond
+  };
+
+  // Données des 4 écrans
+  static const _screens = [
+    _ScreenData(
+      phase: _Phase.s1,
+      number: '01 — 04',
+      title: 'Le cinéma africain,\nen lumière.',
+      subtitle: 'Des œuvres qui parlent de nous,\nracontées par nous.',
     ),
-    _OnboardingSlide(
-      icon: Icons.download_rounded,
-      title: 'Téléchargez & Regardez',
-      description:
-          'Téléchargez vos contenus préférés et regardez-les hors ligne, même sans connexion internet.',
-      gradient: [const Color(0xFF6366F1), const Color(0xFF4F46E5)],
+    _ScreenData(
+      phase: _Phase.s2,
+      number: '02 — 04',
+      title: 'Les créateurs d\'ici,\nà l\'honneur.',
+      subtitle: 'Talents camerounais et africains\nau premier plan.',
     ),
-    _OnboardingSlide(
-      icon: Icons.devices_rounded,
-      title: 'Sur Tous Vos Écrans',
-      description:
-          'Profitez de Guezs Films sur votre téléphone, tablette, ordinateur ou TV connectée.',
-      gradient: [const Color(0xFF10B981), const Color(0xFF059669)],
+    _ScreenData(
+      phase: _Phase.s3,
+      number: '03 — 04',
+      title: 'Votre culture.\nVotre écran.',
+      subtitle: 'Séries originales, films exclusifs,\nhistoires locales.',
     ),
-    _OnboardingSlide(
-      icon: Icons.family_restroom_rounded,
-      title: 'Profils Personnalisés',
-      description:
-          'Activez votre accès exclusif par code promo et créez jusqu\'à 4 profils personnalisés pour toute la famille.',
-      gradient: [AppColors.accent, AppColors.accentSoft],
+    _ScreenData(
+      phase: _Phase.s4,
+      number: '04 — 04',
+      title: 'Une nouvelle ère\ncommence.',
+      subtitle: 'Guezs Films. Tout le cinéma africain.',
     ),
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _startTimer(const Duration(seconds: 5));
+  }
+
+  void _startTimer(Duration duration) {
+    _timer?.cancel();
+    _timer = Timer(duration, _advance);
+  }
+
+  void _advance() {
+    if (!mounted) return;
+    setState(() {
+      switch (_phase) {
+        case _Phase.s1:
+          _phase = _Phase.s2;
+          _startTimer(const Duration(seconds: 5));
+        case _Phase.s2:
+          _phase = _Phase.s3;
+          _startTimer(const Duration(seconds: 5));
+        case _Phase.s3:
+          _phase = _Phase.s4;
+          _startTimer(const Duration(seconds: 5));
+        case _Phase.s4:
+          _phase = _Phase.logo;
+          // 1200ms fade-in + 1600ms hold + 1000ms fade-out = 3800ms
+          _startTimer(const Duration(milliseconds: 3800));
+        case _Phase.logo:
+          _phase = _Phase.done;
+          _timer = null;
+          context.go(Routes.login, extra: {'isLogin': false});
+        case _Phase.done:
+          break;
+      }
+    });
+  }
+
+  @override
   void dispose() {
-    _pageController.dispose();
+    _timer?.cancel();
     super.dispose();
-  }
-
-  void _nextPage() {
-    if (_currentPage < _slides.length - 1) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeInOut,
-      );
-    } else {
-      _goToLogin();
-    }
-  }
-
-  void _goToLogin() {
-    context.go(Routes.login, extra: {'isLogin': false});
   }
 
   @override
   Widget build(BuildContext context) {
+    final isLogoPhase = _phase == _Phase.logo;
+    final ambientColor = _ambientColors[_phase];
+
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Skip button
-            Align(
-              alignment: Alignment.topRight,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: TextButton(
-                  onPressed: _goToLogin,
-                  child: Text(
-                    'Passer',
-                    style: AppTextStyles.labelLarge.copyWith(
-                      color: AppColors.textTertiary,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            // Page content
-            Expanded(
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: _slides.length,
-                onPageChanged: (index) {
-                  setState(() => _currentPage = index);
-                },
-                itemBuilder: (context, index) {
-                  return _buildSlide(_slides[index], index);
-                },
-              ),
-            ),
-
-            // Indicators and button
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  // Page indicator
-                  SmoothPageIndicator(
-                    controller: _pageController,
-                    count: _slides.length,
-                    effect: ExpandingDotsEffect(
-                      dotHeight: 8,
-                      dotWidth: 8,
-                      activeDotColor: AppColors.primary,
-                      dotColor: AppColors.surfaceVariant,
-                      expansionFactor: 3,
-                    ),
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // CTA Button
-                  GradientButton(
-                    text: _currentPage == _slides.length - 1
-                        ? 'Commencer'
-                        : 'Suivant',
-                    width: double.infinity,
-                    onPressed: _nextPage,
-                    icon: _currentPage == _slides.length - 1
-                        ? Icons.arrow_forward
-                        : null,
-                  ),
+      backgroundColor: Colors.black,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Fond ambiant animé (couleur subtile)
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 800),
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: Alignment.center,
+                radius: 1.2,
+                colors: [
+                  (ambientColor ?? Colors.transparent)
+                      .withValues(alpha: 0.06),
+                  Colors.black,
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+
+          // Contenu principal (AnimatedSwitcher pour le cross-fade)
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 800),
+            transitionBuilder: (child, animation) {
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 0.04),
+                    end: Offset.zero,
+                  ).animate(CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOut,
+                  )),
+                  child: child,
+                ),
+              );
+            },
+            child: isLogoPhase
+                ? _LogoScreen(key: const ValueKey('logo'), onDone: _advance)
+                : _buildOnboardingContent(),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildSlide(_OnboardingSlide slide, int index) {
+  Widget _buildOnboardingContent() {
+    final data = _screens.firstWhere(
+      (s) => s.phase == _phase,
+      orElse: () => _screens.first,
+    );
+
+    return _OnboardingScreen(
+      key: ValueKey(_phase),
+      data: data,
+      accentColor: _ambientColors[_phase] ?? AppColors.primary,
+    );
+  }
+}
+
+// ─── Écran d'onboarding individuel ────────────────────────────────────────────
+
+class _OnboardingScreen extends StatefulWidget {
+  final _ScreenData data;
+  final Color accentColor;
+
+  const _OnboardingScreen({
+    super.key,
+    required this.data,
+    required this.accentColor,
+  });
+
+  @override
+  State<_OnboardingScreen> createState() => _OnboardingScreenState();
+}
+
+class _OnboardingScreenState extends State<_OnboardingScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _anim;
+  late final Animation<double> _titleOpacity;
+  late final Animation<Offset> _titleSlide;
+  late final Animation<double> _subtitleOpacity;
+
+  @override
+  void initState() {
+    super.initState();
+    _anim = AnimationController(
+      duration: const Duration(milliseconds: 900),
+      vsync: this,
+    );
+
+    _titleOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _anim, curve: const Interval(0.0, 0.6)),
+    );
+    _titleSlide = Tween<Offset>(
+      begin: const Offset(0, 0.12),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _anim,
+        curve: const Interval(0.0, 0.7, curve: Curves.easeOut),
+      ),
+    );
+    _subtitleOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _anim, curve: const Interval(0.3, 1.0)),
+    );
+
+    _anim.forward();
+  }
+
+  @override
+  void dispose() {
+    _anim.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32),
+      padding: const EdgeInsets.symmetric(horizontal: 36),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Icon with gradient background
-          Container(
-                width: 140,
-                height: 140,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: slide.gradient,
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+          const Spacer(flex: 3),
+
+          // Numéro d'écran
+          Text(
+            widget.data.number,
+            style: AppTextStyles.labelSmall.copyWith(
+              color: widget.accentColor.withValues(alpha: 0.8),
+              letterSpacing: 3,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Ligne décorative colorée
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 600),
+            width: 48,
+            height: 2,
+            color: widget.accentColor,
+          ),
+
+          const SizedBox(height: 32),
+
+          // Titre
+          AnimatedBuilder(
+            animation: _anim,
+            builder: (_, child) => Opacity(
+              opacity: _titleOpacity.value,
+              child: SlideTransition(
+                position: _titleSlide,
+                child: Text(
+                  widget.data.title,
+                  style: AppTextStyles.displaySmall.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    height: 1.15,
+                    letterSpacing: -0.5,
                   ),
-                  borderRadius: BorderRadius.circular(32),
-                  boxShadow: [
-                    BoxShadow(
-                      color: slide.gradient.first.withValues(alpha: 0.4),
-                      blurRadius: 30,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
                 ),
-                child: Icon(slide.icon, size: 70, color: Colors.white),
-              )
-              .animate(key: ValueKey('icon_$index'))
-              .scale(
-                begin: const Offset(0.8, 0.8),
-                end: const Offset(1.0, 1.0),
-                duration: 500.ms,
-                curve: Curves.elasticOut,
-              )
-              .fadeIn(duration: 400.ms),
+              ),
+            ),
+          ),
 
-          const SizedBox(height: 48),
+          const SizedBox(height: 24),
 
-          // Title
-          Text(
-                slide.title,
-                textAlign: TextAlign.center,
-                style: AppTextStyles.headlineLarge.copyWith(
-                  color: AppColors.textPrimary,
-                ),
-              )
-              .animate(key: ValueKey('title_$index'))
-              .fadeIn(duration: 400.ms, delay: 100.ms)
-              .slideY(begin: 0.2, end: 0),
-
-          const SizedBox(height: 16),
-
-          // Description
-          Text(
-                slide.description,
-                textAlign: TextAlign.center,
+          // Sous-texte
+          AnimatedBuilder(
+            animation: _anim,
+            builder: (_, child) => Opacity(
+              opacity: _subtitleOpacity.value,
+              child: Text(
+                widget.data.subtitle,
                 style: AppTextStyles.bodyLarge.copyWith(
-                  color: AppColors.textSecondary,
-                  height: 1.6,
+                  color: AppColors.textTertiary,
+                  height: 1.7,
                 ),
-              )
-              .animate(key: ValueKey('desc_$index'))
-              .fadeIn(duration: 400.ms, delay: 200.ms)
-              .slideY(begin: 0.2, end: 0),
+              ),
+            ),
+          ),
+
+          const Spacer(flex: 4),
         ],
       ),
     );
   }
 }
 
-class _OnboardingSlide {
-  final IconData icon;
-  final String title;
-  final String description;
-  final List<Color> gradient;
+// ─── Logo cinématique ─────────────────────────────────────────────────────────
 
-  const _OnboardingSlide({
-    required this.icon,
+class _LogoScreen extends StatefulWidget {
+  final VoidCallback onDone;
+
+  const _LogoScreen({super.key, required this.onDone});
+
+  @override
+  State<_LogoScreen> createState() => _LogoScreenState();
+}
+
+class _LogoScreenState extends State<_LogoScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _anim;
+  late final Animation<double> _opacity;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    // Séquence : fade-in 1200ms → hold 1600ms → fade-out 1000ms = 3800ms total
+    _anim = AnimationController(
+      duration: const Duration(milliseconds: 3800),
+      vsync: this,
+    );
+
+    _opacity = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween(begin: 0.0, end: 1.0)
+            .chain(CurveTween(curve: Curves.easeIn)),
+        weight: 1200,
+      ),
+      TweenSequenceItem(tween: ConstantTween(1.0), weight: 1600),
+      TweenSequenceItem(
+        tween: Tween(begin: 1.0, end: 0.0)
+            .chain(CurveTween(curve: Curves.easeOut)),
+        weight: 1000,
+      ),
+    ]).animate(_anim);
+
+    _scale = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween(begin: 0.92, end: 1.0)
+            .chain(CurveTween(curve: Curves.easeOut)),
+        weight: 1200,
+      ),
+      TweenSequenceItem(tween: ConstantTween(1.0), weight: 2600),
+    ]).animate(_anim);
+
+    _anim.forward();
+  }
+
+  @override
+  void dispose() {
+    _anim.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (_, child) => Opacity(
+        opacity: _opacity.value,
+        child: Center(
+          child: Transform.scale(
+            scale: _scale.value,
+            child: Image.asset(
+              'assets/icons/logo.png',
+              width: 220,
+              fit: BoxFit.contain,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Data classes ─────────────────────────────────────────────────────────────
+
+class _ScreenData {
+  final _Phase phase;
+  final String number;
+  final String title;
+  final String subtitle;
+
+  const _ScreenData({
+    required this.phase,
+    required this.number,
     required this.title,
-    required this.description,
-    required this.gradient,
+    required this.subtitle,
   });
 }
