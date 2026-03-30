@@ -4,7 +4,19 @@
       "Bash(flutter analyze:*)",
       "Bash(flutter clean:*)",
       "Bash(flutter pub:*)",
-      "Bash(echo \"EXIT:$?\")"
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(if not:*)",
+      "Bash(firebase deploy:*)",
+      "Bash(gcloud --version)",
+      "Bash(gcloud projects:*)",
+      "Bash(firebase login:list)",
+      "Bash(gcloud config:*)",
+      "Bash(gcloud auth:*)",
+      "Bash(firebase functions:artifacts:setpolicy)",
+      "Bash(flutter build:*)",
+      "Bash(./gradlew assembleDebug --stacktrace)",
+      "Bash(./gradlew assembleDebug --info)",
+      "Bash(./gradlew assembleDebug)"
     ]
   }
 }

@@ -64,3 +64,5 @@ analysis_results.txt
 analysis_results_2.txt
 analysis_results_utf8.txt
 filelist.txt
+node_modules/
+**/node_modules/
