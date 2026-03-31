@@ -24,6 +24,8 @@ abstract class AuthRemoteDataSource {
 
   Future<void> signOut();
 
+  Future<void> deleteAccount(AuthCredential credential);
+
   Stream<User?> get authStateChanges;
 
   User? get currentUser;
@@ -165,6 +167,14 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<void> signOut() async {
     await _firebaseAuth.signOut();
+  }
+
+  @override
+  Future<void> deleteAccount(AuthCredential credential) async {
+    final user = _firebaseAuth.currentUser;
+    if (user == null) throw StateError('No authenticated user');
+    await user.reauthenticateWithCredential(credential);
+    await user.delete();
   }
 
   @override
