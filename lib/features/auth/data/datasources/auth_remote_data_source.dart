@@ -171,10 +171,16 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Future<void> deleteAccount(AuthCredential credential) async {
-    final user = _firebaseAuth.currentUser;
-    if (user == null) throw StateError('No authenticated user');
-    await user.reauthenticateWithCredential(credential);
-    await user.delete();
+    try {
+      final user = _firebaseAuth.currentUser;
+      if (user == null) throw ServerException('Aucun utilisateur authentifié');
+      await user.reauthenticateWithCredential(credential);
+      await user.delete();
+    } on FirebaseAuthException catch (e) {
+      throw ServerException(e.message ?? 'Erreur lors de la suppression du compte');
+    } catch (e) {
+      throw ServerException(e.toString());
+    }
   }
 
   @override
