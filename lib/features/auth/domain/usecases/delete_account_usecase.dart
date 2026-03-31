@@ -24,35 +24,43 @@ class DeleteAccountUseCase {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) throw StateError('No authenticated user');
 
-    // 1. Supprimer subcollections Firestore
-    await _deleteSubcollection(uid, 'favorites');
-    await _deleteSubcollection(uid, 'profiles');
-
-    // 2. Supprimer le document utilisateur racine
-    await _firestore.collection('users').doc(uid).delete();
-
-    // 3. Vider les boîtes Hive locales
-    await _clearHive(deleteDownloads: deleteDownloads);
-
-    // 4. Supprimer le compte Firebase Auth (inclut re-auth)
+    // 1. Supprimer le compte Firebase Auth EN PREMIER (irréversible — doit réussir avant tout nettoyage)
     final result = await _authRepository.deleteAccount(credential);
     result.fold(
       (failure) => throw Exception(failure.message),
       (_) {},
     );
+
+    // 2. Nettoyage Firestore (best-effort — compte déjà supprimé)
+    await _deleteSubcollection(uid, 'favorites');
+    await _deleteSubcollection(uid, 'profiles');
+    await _firestore.collection('users').doc(uid).delete();
+
+    // 3. Vider Hive local
+    await _clearHive(deleteDownloads: deleteDownloads);
   }
 
   Future<void> _deleteSubcollection(String uid, String collection) async {
-    final snapshot = await _firestore
-        .collection('users')
-        .doc(uid)
-        .collection(collection)
-        .get();
-    final batch = _firestore.batch();
-    for (final doc in snapshot.docs) {
-      batch.delete(doc.reference);
+    try {
+      final snapshot = await _firestore
+          .collection('users')
+          .doc(uid)
+          .collection(collection)
+          .get();
+
+      // Firestore batch limit: 500 writes per commit
+      const batchSize = 500;
+      for (var i = 0; i < snapshot.docs.length; i += batchSize) {
+        final batch = _firestore.batch();
+        final chunk = snapshot.docs.skip(i).take(batchSize);
+        for (final doc in chunk) {
+          batch.delete(doc.reference);
+        }
+        await batch.commit();
+      }
+    } catch (_) {
+      // Best-effort cleanup — account already deleted, ignore Firestore errors
     }
-    if (snapshot.docs.isNotEmpty) await batch.commit();
   }
 
   Future<void> _clearHive({required bool deleteDownloads}) async {
