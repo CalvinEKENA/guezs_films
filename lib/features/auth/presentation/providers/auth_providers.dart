@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/datasources/auth_remote_data_source.dart';
@@ -5,6 +6,7 @@ import '../../data/repositories/auth_repository_impl.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/auth_usecases.dart';
+import '../../domain/usecases/delete_account_usecase.dart';
 
 // Firebase instance provider
 final firebaseAuthProvider = Provider<FirebaseAuth>(
@@ -44,6 +46,13 @@ final signOutProvider = Provider<SignOut>((ref) {
 
 final getAuthStateChangesProvider = Provider<GetAuthStateChanges>((ref) {
   return GetAuthStateChanges(ref.watch(authRepositoryProvider));
+});
+
+final deleteAccountUseCaseProvider = Provider<DeleteAccountUseCase>((ref) {
+  return DeleteAccountUseCase(
+    authRepository: ref.watch(authRepositoryProvider),
+    firestore: FirebaseFirestore.instance,
+  );
 });
 
 // Auth state provider
@@ -128,5 +137,21 @@ class AuthController extends StateNotifier<AsyncValue<UserEntity?>> {
           state = AsyncValue.error(failure.message, StackTrace.current),
       (_) => state = const AsyncValue.data(null),
     );
+  }
+
+  Future<void> deleteAccount({
+    required AuthCredential credential,
+    required bool deleteDownloads,
+  }) async {
+    state = const AsyncValue.loading();
+    try {
+      await _ref.read(deleteAccountUseCaseProvider).execute(
+            credential: credential,
+            deleteDownloads: deleteDownloads,
+          );
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
   }
 }
