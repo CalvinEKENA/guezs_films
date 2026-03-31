@@ -86,6 +86,19 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<Either<Failure, void>> deleteAccount(
+      firebase.AuthCredential credential) async {
+    try {
+      await _remoteDataSource.deleteAccount(credential);
+      return const Right(null);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
   Stream<UserEntity?> get authStateChanges => _remoteDataSource.authStateChanges
       .map((user) => user != null ? _mapFirebaseUserToEntity(user) : null);
 
