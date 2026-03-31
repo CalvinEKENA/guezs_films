@@ -144,14 +144,13 @@ class AuthController extends StateNotifier<AsyncValue<UserEntity?>> {
     required bool deleteDownloads,
   }) async {
     state = const AsyncValue.loading();
-    try {
-      await _ref.read(deleteAccountUseCaseProvider).execute(
-            credential: credential,
-            deleteDownloads: deleteDownloads,
-          );
-      state = const AsyncValue.data(null);
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-    }
+    final result = await _ref.read(deleteAccountUseCaseProvider).execute(
+      credential: credential,
+      deleteDownloads: deleteDownloads,
+    );
+    result.fold(
+      (failure) => state = AsyncValue.error(failure.message, StackTrace.current),
+      (_) => state = const AsyncValue.data(null),
+    );
   }
 }

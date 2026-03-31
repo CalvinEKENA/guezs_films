@@ -1,10 +1,12 @@
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dartz/dartz.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hive/hive.dart';
 
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/errors/failures.dart';
 import '../repositories/auth_repository.dart';
 
 class DeleteAccountUseCase {
@@ -17,27 +19,32 @@ class DeleteAccountUseCase {
   final AuthRepository _authRepository;
   final FirebaseFirestore _firestore;
 
-  Future<void> execute({
+  Future<Either<Failure, void>> execute({
     required AuthCredential credential,
     required bool deleteDownloads,
   }) async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) throw StateError('No authenticated user');
+    try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) return const Left(AuthFailure('No authenticated user'));
 
-    // 1. Supprimer le compte Firebase Auth EN PREMIER (irréversible — doit réussir avant tout nettoyage)
-    final result = await _authRepository.deleteAccount(credential);
-    result.fold(
-      (failure) => throw Exception(failure.message),
-      (_) {},
-    );
+      // 1. Supprimer le compte Firebase Auth EN PREMIER (irréversible — doit réussir avant tout nettoyage)
+      final result = await _authRepository.deleteAccount(credential);
+      if (result.isLeft()) return result; // propagate failure
 
-    // 2. Nettoyage Firestore (best-effort — compte déjà supprimé)
-    await _deleteSubcollection(uid, 'favorites');
-    await _deleteSubcollection(uid, 'profiles');
-    await _firestore.collection('users').doc(uid).delete();
+      // 2. Nettoyage Firestore (best-effort — compte déjà supprimé)
+      await _deleteSubcollection(uid, 'favorites');
+      await _deleteSubcollection(uid, 'profiles');
+      await _firestore.collection('users').doc(uid).delete();
 
-    // 3. Vider Hive local
-    await _clearHive(deleteDownloads: deleteDownloads);
+      // 3. Vider Hive local
+      await _clearHive(deleteDownloads: deleteDownloads);
+
+      return const Right(null);
+    } on Exception catch (e) {
+      return Left(ServerFailure(e.toString()));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
   }
 
   Future<void> _deleteSubcollection(String uid, String collection) async {
