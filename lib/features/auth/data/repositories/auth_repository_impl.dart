@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase;
+import 'package:firebase_auth/firebase_auth.dart' show AuthCredential;
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/user_entity.dart';
@@ -87,7 +88,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Either<Failure, void>> deleteAccount(
-      firebase.AuthCredential credential) async {
+      AuthCredential credential) async {
     try {
       await _remoteDataSource.deleteAccount(credential);
       return const Right(null);
