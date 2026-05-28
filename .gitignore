@@ -42,6 +42,7 @@ next-env.d.ts
 
 # custom ignores
 .codex-dev.log
+.codex-dev.err.log
 .firebase/
 guezs_house_web.zip
 voltaskai.html
@@ -49,4 +50,3 @@ voltaskai_utf8.html
 classes_extracted.txt
 extract_styles.py
 styles_extracted.css
-
