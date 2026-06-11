@@ -10,7 +10,6 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/cached_image.dart';
 import '../../../../core/widgets/gradient_button.dart';
-import '../../../../core/widgets/promo_code_dialog.dart';
 import '../../../../features/favorites/domain/entities/favorite_movie.dart';
 import '../../../../features/favorites/presentation/providers/favorites_providers.dart';
 import '../../../../features/downloads/domain/entities/download_item.dart';
@@ -386,12 +385,7 @@ class _DetailsPageState extends ConsumerState<DetailsPage> {
   }
 
   void _playFilm(String filmId) {
-    showPromoCodeDialog(
-      context,
-      onSuccess: () {
-        context.push(Routes.filmWatchPath(filmId));
-      },
-    );
+    context.push(Routes.filmWatchPath(filmId));
   }
 
   Widget _buildDownloadButton(WidgetRef ref, dynamic film) {

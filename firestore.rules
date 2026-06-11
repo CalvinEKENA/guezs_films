@@ -65,5 +65,24 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow write: if isAdmin();
     }
+
+    // ─── Premium access / video entitlement ──────────────────────────────────
+    match /access_codes/{codeId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /user_entitlements/{entitlementId} {
+      allow read: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow write: if isAdmin();
+    }
+
+    match /watch_sessions/{sessionId} {
+      allow read: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow write: if isAdmin();
+    }
+
+    match /content_access_rules/{ruleId} {
+      allow read, write: if isAdmin();
+    }
   }
 }

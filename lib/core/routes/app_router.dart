@@ -56,10 +56,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           path == Routes.onboarding ||
           path == Routes.splash;
       final isProfileSelector = path == Routes.profileSelector;
+      final isWatchRoute = path.startsWith('${Routes.watch}/');
 
       if (user == null) {
         // Non connecté → login (sauf si déjà sur une route auth)
-        return isAuthRoute || isProfileSelector ? null : Routes.login;
+        return isAuthRoute || isProfileSelector || isWatchRoute
+            ? null
+            : Routes.login;
       }
 
       // Connecté + route auth → sélecteur de profil

@@ -4,6 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/providers/content_providers.dart';
 import '../../../../core/routes/route_constants.dart';
+import '../../../../core/widgets/promo_code_dialog.dart';
+import '../../../access/domain/entities/watch_access_result.dart';
+import '../../../access/presentation/providers/watch_access_providers.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../widgets/watch_state_view.dart';
 import '../../domain/entities/player_content_request.dart';
 import 'player_page.dart';
@@ -16,7 +20,37 @@ class WatchFilmPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final request = PlayerContentRequest.film(filmId);
+    final authState = ref.watch(authStateProvider);
+
+    if (authState.isLoading) {
+      return const WatchStateView.loading(
+        title: 'Vérification du compte',
+        message: 'Contrôle de votre session...',
+      );
+    }
+
+    if (authState.valueOrNull == null) {
+      return WatchStateView(
+        icon: Icons.lock_outline_rounded,
+        title: 'Connexion requise',
+        message:
+            'Connectez-vous ou créez un compte pour demander un accès vidéo.',
+        primaryLabel: 'Se connecter',
+        onPrimaryPressed: () => context.go(Routes.login),
+        secondaryLabel: 'Retour au catalogue',
+        onSecondaryPressed: () => context.go(Routes.home),
+      );
+    }
+
     final filmAsync = ref.watch(filmDetailsProvider(filmId));
+    final accessAsync = ref.watch(watchAccessProvider(request));
+
+    if (filmAsync.isLoading || accessAsync.isLoading) {
+      return const WatchStateView.loading(
+        title: 'Vérification de l’accès',
+        message: 'Préparation de votre session de lecture...',
+      );
+    }
 
     return filmAsync.when(
       loading: () => const WatchStateView.loading(
@@ -37,7 +71,24 @@ class WatchFilmPage extends ConsumerWidget {
         onSecondaryPressed: () => ref.invalidate(filmDetailsProvider(filmId)),
       ),
       data: (film) {
-        if (film.videoUrl.trim().isEmpty) {
+        final access = accessAsync.valueOrNull;
+        if (access == null || !access.allowed) {
+          return _buildAccessState(
+            context: context,
+            ref: ref,
+            request: request,
+            result:
+                access ??
+                const WatchAccessResult(
+                  allowed: false,
+                  status: WatchAccessStatus.error,
+                  message: 'Impossible de vérifier l’accès vidéo.',
+                ),
+          );
+        }
+
+        final playbackUrl = _resolvePlaybackUrl(access, film.videoUrl);
+        if (playbackUrl.isEmpty) {
           return WatchStateView(
             icon: Icons.videocam_off_outlined,
             title: 'Vidéo indisponible',
@@ -51,13 +102,76 @@ class WatchFilmPage extends ConsumerWidget {
         }
 
         return PlayerPage(
-          videoUrl: film.videoUrl,
+          videoUrl: playbackUrl,
           title: film.title,
           posterUrl: film.posterUrl,
           request: request,
         );
       },
     );
+  }
+
+  Widget _buildAccessState({
+    required BuildContext context,
+    required WidgetRef ref,
+    required PlayerContentRequest request,
+    required WatchAccessResult result,
+  }) {
+    if (result.requiresLogin) {
+      return WatchStateView(
+        icon: Icons.lock_outline_rounded,
+        title: 'Connexion requise',
+        message: result.message.isNotEmpty
+            ? result.message
+            : 'Connectez-vous pour demander un accès à ce film.',
+        primaryLabel: 'Se connecter',
+        onPrimaryPressed: () => context.go(Routes.login),
+        secondaryLabel: 'Retour au film',
+        onSecondaryPressed: () => context.go(Routes.filmDetailsPath(filmId)),
+      );
+    }
+
+    final canEnterCode = result.requiresCode;
+    return WatchStateView(
+      icon: canEnterCode
+          ? Icons.lock_open_rounded
+          : Icons.error_outline_rounded,
+      title: canEnterCode ? 'Accès requis' : 'Accès indisponible',
+      message: result.message.isNotEmpty
+          ? result.message
+          : 'Ce contenu nécessite un accès valide.',
+      primaryLabel: canEnterCode ? 'Débloquer l’accès' : 'Réessayer',
+      onPrimaryPressed: canEnterCode
+          ? () => _showAccessDialog(context, ref, request)
+          : () => ref.invalidate(watchAccessProvider(request)),
+      secondaryLabel: 'Retour au film',
+      onSecondaryPressed: () => context.go(Routes.filmDetailsPath(filmId)),
+    );
+  }
+
+  void _showAccessDialog(
+    BuildContext context,
+    WidgetRef ref,
+    PlayerContentRequest request,
+  ) {
+    showPromoCodeDialog(
+      context,
+      request: request,
+      onSuccess: (_) => ref.invalidate(watchAccessProvider(request)),
+      onNoCode: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Un accès ou un code valide est nécessaire.'),
+          ),
+        );
+      },
+    );
+  }
+
+  String _resolvePlaybackUrl(WatchAccessResult access, String fallbackUrl) {
+    final signedUrl = access.playbackUrl?.trim();
+    if (signedUrl != null && signedUrl.isNotEmpty) return signedUrl;
+    return fallbackUrl.trim();
   }
 }
 

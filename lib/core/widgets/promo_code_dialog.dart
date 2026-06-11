@@ -1,37 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../features/access/domain/entities/watch_access_result.dart';
+import '../../features/access/presentation/providers/watch_access_providers.dart';
+import '../../features/player/domain/entities/player_content_request.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import 'gradient_button.dart';
 import 'glass_card.dart';
 
-/// A premium dialog to enter a 6-digit promo code featuring our influencers
-/// Polished version: Responsive, invisible input, and stable cross-platform behavior
-class PromoCodeDialog extends StatefulWidget {
-  final VoidCallback onSuccess;
+class PromoCodeDialog extends ConsumerStatefulWidget {
+  const PromoCodeDialog({
+    super.key,
+    required this.request,
+    required this.onSuccess,
+    this.onNoCode,
+  });
 
-  const PromoCodeDialog({super.key, required this.onSuccess});
+  final PlayerContentRequest request;
+  final ValueChanged<WatchAccessResult> onSuccess;
+  final VoidCallback? onNoCode;
 
   @override
-  State<PromoCodeDialog> createState() => _PromoCodeDialogState();
+  ConsumerState<PromoCodeDialog> createState() => _PromoCodeDialogState();
 }
 
-class _PromoCodeDialogState extends State<PromoCodeDialog> {
+class _PromoCodeDialogState extends ConsumerState<PromoCodeDialog> {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
-  bool _isError = false;
   bool _isLoading = false;
-  String? _successInfluencer;
+  bool _isGranted = false;
+  String? _message;
 
   @override
   void initState() {
     super.initState();
-    // Auto-focus after dialog animation ends
-    Future.delayed(const Duration(milliseconds: 300), () {
-      if (mounted) {
-        _focusNode.requestFocus();
-      }
+    Future.delayed(const Duration(milliseconds: 250), () {
+      if (mounted) _focusNode.requestFocus();
     });
   }
 
@@ -42,49 +48,55 @@ class _PromoCodeDialogState extends State<PromoCodeDialog> {
     super.dispose();
   }
 
-  void _onChanged(String value) {
-    if (value.length == 6) {
-      _verifyCode(value);
+  Future<void> _validateCode() async {
+    final code = _controller.text.trim();
+    if (code.isEmpty) {
+      setState(() {
+        _message = 'Entrez un code d’accès.';
+      });
+      return;
     }
-    if (_isError) {
-      setState(() => _isError = false);
-    }
-  }
 
-  Future<void> _verifyCode(String code) async {
     setState(() {
       _isLoading = true;
-      _isError = false;
+      _message = null;
     });
 
-    await Future.delayed(const Duration(milliseconds: 1000));
+    final result = await ref
+        .read(watchAccessRepositoryProvider)
+        .validateAccessCode(request: widget.request, code: code);
 
-    if (code == '123456' || code == '654321') {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _successInfluencer = code == '123456'
-              ? 'Muriel Blanche'
-              : 'Betty Christy';
-        });
+    if (!mounted) return;
 
-        await Future.delayed(const Duration(milliseconds: 1500));
-
-        if (mounted) {
-          Navigator.pop(context);
-          widget.onSuccess();
-        }
-      }
-    } else {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _isError = true;
-          _controller.clear();
-        });
-        _focusNode.requestFocus();
-      }
+    if (result.allowed) {
+      setState(() {
+        _isLoading = false;
+        _isGranted = true;
+        _message = result.message.isNotEmpty
+            ? result.message
+            : 'Accès accordé.';
+      });
+      await Future<void>.delayed(const Duration(milliseconds: 650));
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      widget.onSuccess(result);
+      return;
     }
+
+    setState(() {
+      _isLoading = false;
+      _isGranted = false;
+      _message = result.message.isNotEmpty
+          ? result.message
+          : 'Accès refusé. Vérifiez votre code.';
+    });
+    _controller.clear();
+    _focusNode.requestFocus();
+  }
+
+  void _handleNoCode() {
+    Navigator.of(context).pop();
+    widget.onNoCode?.call();
   }
 
   @override
@@ -97,226 +109,88 @@ class _PromoCodeDialogState extends State<PromoCodeDialog> {
         blur: 20,
         opacity: 0.1,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(24),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (_successInfluencer != null) ...[
-                _buildSuccessState()
-              ] else ...[
-                _buildInputState()
+              Icon(
+                _isGranted
+                    ? Icons.check_circle_outline_rounded
+                    : Icons.lock_open_rounded,
+                color: _isGranted ? AppColors.success : AppColors.primary,
+                size: 52,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                _isGranted ? 'Accès accordé' : 'Débloquer l’accès',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.headlineSmall.copyWith(
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _isGranted
+                    ? 'Préparation de la lecture...'
+                    : 'Entrez votre code ambassadeur ou votre code d’accès.',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 24),
+              TextField(
+                controller: _controller,
+                focusNode: _focusNode,
+                enabled: !_isLoading && !_isGranted,
+                textCapitalization: TextCapitalization.characters,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => _validateCode(),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp('[A-Za-z0-9-]')),
+                  LengthLimitingTextInputFormatter(32),
+                  _UpperCaseTextFormatter(),
+                ],
+                style: AppTextStyles.titleMedium.copyWith(
+                  color: AppColors.textPrimary,
+                  letterSpacing: 1.5,
+                ),
+                decoration: InputDecoration(
+                  labelText: 'Code',
+                  hintText: 'VOTRE-CODE',
+                  prefixIcon: const Icon(Icons.confirmation_number_outlined),
+                  errorText: _message != null && !_isGranted ? _message : null,
+                ),
+              ),
+              if (_message != null && _isGranted) ...[
+                const SizedBox(height: 12),
+                Text(
+                  _message!,
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.success,
+                  ),
+                ),
               ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSuccessState() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.green.withValues(alpha: 0.1),
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(
-            Icons.check_circle_outline_rounded,
-            color: Colors.green,
-            size: 60,
-          ),
-        ).animate().scale().fadeIn(),
-        const SizedBox(height: 20),
-        Text(
-          'Code Validé !',
-          style: AppTextStyles.headlineSmall.copyWith(
-            color: Colors.green,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Merci d\'utiliser le code de $_successInfluencer',
-          textAlign: TextAlign.center,
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.textSecondary,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildInputState() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Ambassadrices avatars
-        SizedBox(
-          height: 65,
-          width: 115,
-          child: Stack(
-            children: [
-              Positioned(
-                left: 0,
-                child: _buildInfluencerAvatar(
-                  'Muriel Blanche',
-                  'assets/images/muriel_blanche.jpg',
-                ),
+              const SizedBox(height: 24),
+              GradientButton(
+                text: _isLoading ? 'Validation...' : 'Valider',
+                isLoading: _isLoading,
+                onPressed: _isGranted ? null : _validateCode,
+                width: double.infinity,
               ),
-              Positioned(
-                left: 50,
-                child: _buildInfluencerAvatar(
-                  'Betty Christy',
-                  'assets/images/betty_christy.jpg',
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: _isLoading ? null : _handleNoCode,
+                child: Text(
+                  'Je n’ai pas de code',
+                  style: AppTextStyles.labelLarge.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ),
             ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          'Nos Ambassadrices',
-          style: AppTextStyles.caption.copyWith(
-            color: AppColors.primary,
-            letterSpacing: 1.5,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          'Code d\'accès',
-          style: AppTextStyles.headlineSmall.copyWith(
-            color: AppColors.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Entrez le code promo de votre influenceuse préférée.',
-          textAlign: TextAlign.center,
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.textSecondary,
-          ),
-        ),
-        const SizedBox(height: 32),
-        
-        // Input Area
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            // 1. Decorative squares (now slightly narrower for responsiveness)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: List.generate(6, (index) {
-                final char = _controller.text.length > index ? _controller.text[index] : '';
-                final isFocused = _controller.text.length == index && _focusNode.hasFocus;
-                
-                return Container(
-                  width: 35, // Reduced from 40 to fit smaller screens
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceVariant.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: _isError 
-                          ? AppColors.error 
-                          : (isFocused ? AppColors.primary : AppColors.border),
-                      width: isFocused || _isError ? 2 : 1,
-                    ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      char,
-                      style: AppTextStyles.titleLarge.copyWith(
-                        color: _isError ? AppColors.error : AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                );
-              }),
-            ),
-            
-            // 2. Translucent hit-testable overlay
-            // Positioned.fill to allow clicks everywhere on the Row
-            // Using a low opacity to ensure it's still hit-testable but invisible
-            Positioned.fill(
-              child: Opacity(
-                opacity: 0.0,
-                child: TextField(
-                  controller: _controller,
-                  focusNode: _focusNode,
-                  onChanged: _onChanged,
-                  keyboardType: TextInputType.number,
-                  showCursor: false,
-                  enableInteractiveSelection: false,
-                  style: const TextStyle(fontSize: 1),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    LengthLimitingTextInputFormatter(6),
-                  ],
-                  decoration: const InputDecoration(
-                    filled: false,
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-        
-        if (_isError) ...[
-          const SizedBox(height: 16),
-          Text(
-            'Code incorrect. Veuillez réessayer.',
-            style: AppTextStyles.caption.copyWith(
-              color: AppColors.error,
-            ),
-          ),
-        ],
-        
-        const SizedBox(height: 32),
-        GradientButton(
-          text: _isLoading ? 'Vérification...' : 'Débloquer',
-          isLoading: _isLoading,
-          onPressed: _controller.text.length == 6 ? () => _verifyCode(_controller.text) : null,
-          width: double.infinity,
-        ),
-        const SizedBox(height: 12),
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(
-            'Annuler',
-            style: AppTextStyles.labelLarge.copyWith(
-              color: AppColors.textTertiary,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildInfluencerAvatar(String name, String assetPath) {
-    return Container(
-      width: 65,
-      height: 65,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: AppColors.primary, width: 2),
-      ),
-      child: ClipOval(
-        child: Image.asset(
-          assetPath,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => Container(
-            color: AppColors.surfaceVariant,
-            child: const Icon(Icons.person, color: Colors.white),
           ),
         ),
       ),
@@ -324,14 +198,32 @@ class _PromoCodeDialogState extends State<PromoCodeDialog> {
   }
 }
 
-/// Helper method to show the promo code dialog
+class _UpperCaseTextFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    return newValue.copyWith(
+      text: newValue.text.toUpperCase(),
+      selection: newValue.selection,
+    );
+  }
+}
+
 void showPromoCodeDialog(
   BuildContext context, {
-  required VoidCallback onSuccess,
+  required PlayerContentRequest request,
+  required ValueChanged<WatchAccessResult> onSuccess,
+  VoidCallback? onNoCode,
 }) {
   showDialog(
     context: context,
     barrierDismissible: false,
-    builder: (context) => PromoCodeDialog(onSuccess: onSuccess),
+    builder: (context) => PromoCodeDialog(
+      request: request,
+      onSuccess: onSuccess,
+      onNoCode: onNoCode,
+    ),
   );
 }

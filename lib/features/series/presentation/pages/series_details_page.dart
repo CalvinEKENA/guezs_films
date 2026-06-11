@@ -10,7 +10,6 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/cached_image.dart';
 import '../../../../core/widgets/gradient_button.dart';
-import '../../../../core/widgets/promo_code_dialog.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
 import '../../../../features/favorites/domain/entities/favorite_movie.dart';
 import '../../../../features/favorites/presentation/providers/favorites_providers.dart';
@@ -452,17 +451,12 @@ class _SeriesDetailsPageState extends ConsumerState<SeriesDetailsPage> {
     required String seasonId,
     required String episodeId,
   }) {
-    showPromoCodeDialog(
-      context,
-      onSuccess: () {
-        context.push(
-          Routes.episodeWatchPath(
-            seriesId: seriesId,
-            seasonId: seasonId,
-            episodeId: episodeId,
-          ),
-        );
-      },
+    context.push(
+      Routes.episodeWatchPath(
+        seriesId: seriesId,
+        seasonId: seasonId,
+        episodeId: episodeId,
+      ),
     );
   }
 }
