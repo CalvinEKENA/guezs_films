@@ -44,6 +44,9 @@ class ContentRepositoryImpl implements ContentRepository {
       _dataSource.getFeaturedSeries();
 
   @override
+  Future<List<SeriesEntity>> getNewSeries() => _dataSource.getNewSeries();
+
+  @override
   Future<SeriesEntity> getSeriesById(String id) =>
       _dataSource.getSeriesById(id);
 
@@ -54,6 +57,13 @@ class ContentRepositoryImpl implements ContentRepository {
   @override
   Future<List<EpisodeEntity>> getEpisodes(String seriesId, String seasonId) =>
       _dataSource.getEpisodes(seriesId, seasonId);
+
+  @override
+  Future<EpisodeEntity> getEpisodeById(
+    String seriesId,
+    String seasonId,
+    String episodeId,
+  ) => _dataSource.getEpisodeById(seriesId, seasonId, episodeId);
 
   @override
   Future<List<FilmEntity>> searchFilms(String query) =>

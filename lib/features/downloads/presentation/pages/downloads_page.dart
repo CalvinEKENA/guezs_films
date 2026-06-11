@@ -42,7 +42,10 @@ class DownloadsPage extends ConsumerWidget {
           ),
         ),
         error: (err, stack) => Center(
-          child: Text('Erreur: $err', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error)),
+          child: Text(
+            'Erreur: $err',
+            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error),
+          ),
         ),
       ),
     );
@@ -53,11 +56,17 @@ class DownloadsPage extends ConsumerWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.download_for_offline, size: 80, color: AppColors.textTertiary.withValues(alpha: 0.5)),
+          Icon(
+            Icons.download_for_offline,
+            size: 80,
+            color: AppColors.textTertiary.withValues(alpha: 0.5),
+          ),
           const SizedBox(height: 16),
           Text(
             'Aucun téléchargement',
-            style: AppTextStyles.titleMedium.copyWith(color: AppColors.textSecondary),
+            style: AppTextStyles.titleMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
           ),
           const SizedBox(height: 8),
           Padding(
@@ -65,7 +74,9 @@ class DownloadsPage extends ConsumerWidget {
             child: Text(
               'Vos films et séries téléchargés pour un visionnage hors-ligne apparaîtront ici.',
               textAlign: TextAlign.center,
-              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textTertiary),
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textTertiary,
+              ),
             ),
           ),
           const SizedBox(height: 24),
@@ -73,17 +84,26 @@ class DownloadsPage extends ConsumerWidget {
             onPressed: () => context.go(Routes.home),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
-            child: const Text('Explorer le catalogue', style: TextStyle(color: Colors.white)),
-          )
+            child: const Text(
+              'Explorer le catalogue',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildDownloadsList(BuildContext context, WidgetRef ref, List<DownloadItem> downloads) {
+  Widget _buildDownloadsList(
+    BuildContext context,
+    WidgetRef ref,
+    List<DownloadItem> downloads,
+  ) {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: downloads.length,
@@ -94,7 +114,11 @@ class DownloadsPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildDownloadCard(BuildContext context, WidgetRef ref, DownloadItem item) {
+  Widget _buildDownloadCard(
+    BuildContext context,
+    WidgetRef ref,
+    DownloadItem item,
+  ) {
     final isDownloading = item.status == DownloadStatus.downloading;
     final isPaused = item.status == DownloadStatus.paused;
     final isCompleted = item.status == DownloadStatus.completed;
@@ -105,7 +129,9 @@ class DownloadsPage extends ConsumerWidget {
       subtitle = 'Téléchargé • $sizeMb MB';
     } else if (isDownloading || isPaused) {
       final percentage = (item.progress * 100).toStringAsFixed(0);
-      subtitle = isPaused ? 'En pause • $percentage%' : 'Téléchargement... $percentage%';
+      subtitle = isPaused
+          ? 'En pause • $percentage%'
+          : 'Téléchargement... $percentage%';
     } else {
       subtitle = 'En attente...';
     }
@@ -125,11 +151,14 @@ class DownloadsPage extends ConsumerWidget {
               height: 120,
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: CachedImage(imageUrl: item.posterPath, fit: BoxFit.cover),
+                child: CachedImage(
+                  imageUrl: item.posterPath,
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
             const SizedBox(width: 16),
-            
+
             // Info
             Expanded(
               child: Column(
@@ -138,39 +167,55 @@ class DownloadsPage extends ConsumerWidget {
                 children: [
                   Text(
                     item.title,
-                    style: AppTextStyles.titleSmall.copyWith(color: AppColors.textPrimary),
+                    style: AppTextStyles.titleSmall.copyWith(
+                      color: AppColors.textPrimary,
+                    ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 8),
                   Text(
                     subtitle,
-                    style: AppTextStyles.caption.copyWith(color: AppColors.textTertiary),
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.textTertiary,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   if (isDownloading)
                     LinearProgressIndicator(
                       value: item.progress,
                       backgroundColor: AppColors.surfaceVariant,
-                      valueColor: const AlwaysStoppedAnimation<Color>(AppColors.accent),
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        AppColors.accent,
+                      ),
                       borderRadius: BorderRadius.circular(4),
                     ),
                 ],
               ),
             ),
             const SizedBox(width: 12),
-            
+
             // Actions
             if (isCompleted)
               IconButton(
-                icon: const Icon(Icons.play_circle_fill, color: AppColors.primary, size: 40),
+                icon: const Icon(
+                  Icons.play_circle_fill,
+                  color: AppColors.primary,
+                  size: 40,
+                ),
                 onPressed: () {
-                    context.push('${Routes.player}?url=${Uri.encodeComponent(item.localPath)}&title=${Uri.encodeComponent(item.title)}');
+                  context.push(
+                    Routes.legacyPlayerPath(
+                      videoUrl: item.localPath,
+                      title: item.title,
+                    ),
+                  );
                 },
               )
             else if (isDownloading)
               GestureDetector(
-                onTap: () => ref.read(downloadServiceProvider).pauseDownload(item.id),
+                onTap: () =>
+                    ref.read(downloadServiceProvider).pauseDownload(item.id),
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
@@ -185,18 +230,25 @@ class DownloadsPage extends ConsumerWidget {
                 ),
               )
             else if (isPaused)
-               IconButton(
-                 icon: const Icon(Icons.play_arrow, color: AppColors.textSecondary, size: 32),
-                 onPressed: () => ref.read(downloadServiceProvider).startDownload(item),
-               ),
-            
+              IconButton(
+                icon: const Icon(
+                  Icons.play_arrow,
+                  color: AppColors.textSecondary,
+                  size: 32,
+                ),
+                onPressed: () =>
+                    ref.read(downloadServiceProvider).startDownload(item),
+              ),
+
             // Options Menu
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert, color: AppColors.textTertiary),
               color: AppColors.surface,
               onSelected: (value) {
                 if (value == 'delete') {
-                  ref.read(downloadServiceProvider).deleteDownload(item.id, item.localPath);
+                  ref
+                      .read(downloadServiceProvider)
+                      .deleteDownload(item.id, item.localPath);
                 }
               },
               itemBuilder: (context) => [
@@ -204,9 +256,18 @@ class DownloadsPage extends ConsumerWidget {
                   value: 'delete',
                   child: Row(
                     children: [
-                      const Icon(Icons.delete_outline, color: AppColors.error, size: 20),
+                      const Icon(
+                        Icons.delete_outline,
+                        color: AppColors.error,
+                        size: 20,
+                      ),
                       const SizedBox(width: 12),
-                      Text('Supprimer', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error)),
+                      Text(
+                        'Supprimer',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.error,
+                        ),
+                      ),
                     ],
                   ),
                 ),

@@ -15,6 +15,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/cached_image.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
+import '../../../favorites/domain/entities/favorite_movie.dart';
+import '../../../favorites/presentation/providers/favorites_providers.dart';
 
 class SearchPage extends ConsumerStatefulWidget {
   const SearchPage({super.key});
@@ -39,9 +41,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     'Action',
     'Comédie',
     'Drame',
-    'Horreur',
     'Romance',
-    'Sci-Fi',
     'Thriller',
     'Animation',
   ];
@@ -482,6 +482,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       itemBuilder: (context, index) {
         final item = items[index];
         return _SearchContentCard(
+          id: item.id,
           title: item.title,
           posterUrl: item.posterUrl,
           badge: item.type,
@@ -564,21 +565,27 @@ class _HistoryChip extends StatelessWidget {
   }
 }
 
-class _SearchContentCard extends StatelessWidget {
+class _SearchContentCard extends ConsumerWidget {
   const _SearchContentCard({
+    required this.id,
     required this.title,
     required this.posterUrl,
     required this.badge,
     required this.onTap,
   });
 
+  final String id;
   final String title;
   final String posterUrl;
   final String badge;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isFavorite = ref.watch(
+      isFavoriteProvider((id: id, contentType: badge == 'Film' ? 'film' : 'series')),
+    );
+
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -593,6 +600,7 @@ class _SearchContentCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
+                // Badge
                 Positioned(
                   top: 8,
                   left: 8,
@@ -610,6 +618,36 @@ class _SearchContentCard extends StatelessWidget {
                       style: AppTextStyles.caption.copyWith(
                         color: badge == 'Film' ? AppColors.accent : AppColors.primary,
                         fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+                // Favorite Button
+                Positioned(
+                  top: 4,
+                  right: 4,
+                  child: GestureDetector(
+                    onTap: () {
+                      ref.read(favoritesProvider.notifier).toggleFavorite(
+                        FavoriteMovie(
+                          id: id,
+                          title: title,
+                          posterPath: posterUrl,
+                          contentType: badge == 'Film' ? 'film' : 'series',
+                          addedAt: DateTime.now().toIso8601String(),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.5),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        isFavorite ? Icons.check_rounded : Icons.add_rounded,
+                        color: isFavorite ? AppColors.accent : Colors.white,
+                        size: 18,
                       ),
                     ),
                   ),

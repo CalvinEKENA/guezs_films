@@ -13,7 +13,7 @@ import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../domain/entities/user_profile_entity.dart';
 import '../providers/profile_providers.dart';
 import '../providers/user_profile_providers.dart';
-import 'profile_selector_page.dart';
+import '../widgets/profile_form_sheet.dart';
 
 /// User profile page with settings and account info
 class ProfilePage extends ConsumerWidget {
@@ -388,7 +388,14 @@ class ProfilePage extends ConsumerWidget {
                   : null,
             ),
             child: Center(
-              child: Text(profile.emoji, style: const TextStyle(fontSize: 30)),
+              child: profile.emoji.startsWith('assets/') || profile.emoji.startsWith('http')
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: profile.emoji.startsWith('http')
+                          ? Image.network(profile.emoji, width: 64, height: 64, fit: BoxFit.cover)
+                          : Image.asset(profile.emoji, width: 64, height: 64, fit: BoxFit.cover),
+                    )
+                  : Text(profile.emoji, style: const TextStyle(fontSize: 30)),
             ),
           ),
           const SizedBox(height: 8),
@@ -477,7 +484,14 @@ class ProfilePage extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Center(
-                        child: Text(profile.emoji, style: const TextStyle(fontSize: 20)),
+                        child: profile.emoji.startsWith('assets/') || profile.emoji.startsWith('http')
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: profile.emoji.startsWith('http')
+                                    ? Image.network(profile.emoji, width: 40, height: 40, fit: BoxFit.cover)
+                                    : Image.asset(profile.emoji, width: 40, height: 40, fit: BoxFit.cover),
+                              )
+                            : Text(profile.emoji, style: const TextStyle(fontSize: 20)),
                       ),
                     ),
                     const SizedBox(width: 12),

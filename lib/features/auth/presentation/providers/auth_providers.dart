@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/datasources/auth_remote_data_source.dart';
 import '../../data/repositories/auth_repository_impl.dart';
+import '../../../../core/errors/failures.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/auth_usecases.dart';
@@ -109,8 +110,13 @@ class AuthController extends StateNotifier<AsyncValue<UserEntity?>> {
     final result = await useCase.execute();
 
     result.fold(
-      (failure) =>
-          state = AsyncValue.error(failure.message, StackTrace.current),
+      (failure) {
+        if (failure is CancelledFailure) {
+          state = const AsyncValue.data(null);
+        } else {
+          state = AsyncValue.error(failure.message, StackTrace.current);
+        }
+      },
       (user) => state = AsyncValue.data(user),
     );
   }
@@ -121,8 +127,13 @@ class AuthController extends StateNotifier<AsyncValue<UserEntity?>> {
     final result = await useCase.execute();
 
     result.fold(
-      (failure) =>
-          state = AsyncValue.error(failure.message, StackTrace.current),
+      (failure) {
+        if (failure is CancelledFailure) {
+          state = const AsyncValue.data(null);
+        } else {
+          state = AsyncValue.error(failure.message, StackTrace.current);
+        }
+      },
       (user) => state = AsyncValue.data(user),
     );
   }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Guezs Films Typography System
-/// Using Poppins for display/headings and Montserrat for body text
+/// 3-font system: Playfair Display (display/headlines), Outfit (titles/buttons/metadata), Montserrat (body)
 class AppTextStyles {
   AppTextStyles._();
 
@@ -10,21 +10,21 @@ class AppTextStyles {
   // Display Styles (Hero sections, large titles)
   // ─────────────────────────────────────────────────────────────────────────
 
-  static TextStyle displayLarge = GoogleFonts.poppins(
+  static TextStyle displayLarge = GoogleFonts.playfairDisplay(
     fontSize: 48,
     fontWeight: FontWeight.w700,
     letterSpacing: -1.5,
     height: 1.1,
   );
 
-  static TextStyle displayMedium = GoogleFonts.poppins(
+  static TextStyle displayMedium = GoogleFonts.playfairDisplay(
     fontSize: 36,
     fontWeight: FontWeight.w700,
     letterSpacing: -0.5,
     height: 1.2,
   );
 
-  static TextStyle displaySmall = GoogleFonts.poppins(
+  static TextStyle displaySmall = GoogleFonts.playfairDisplay(
     fontSize: 28,
     fontWeight: FontWeight.w600,
     letterSpacing: 0,
@@ -35,21 +35,21 @@ class AppTextStyles {
   // Headline Styles (Section headers, page titles)
   // ─────────────────────────────────────────────────────────────────────────
 
-  static TextStyle headlineLarge = GoogleFonts.poppins(
+  static TextStyle headlineLarge = GoogleFonts.playfairDisplay(
     fontSize: 24,
     fontWeight: FontWeight.w600,
     letterSpacing: 0,
     height: 1.3,
   );
 
-  static TextStyle headlineMedium = GoogleFonts.poppins(
+  static TextStyle headlineMedium = GoogleFonts.playfairDisplay(
     fontSize: 20,
     fontWeight: FontWeight.w600,
     letterSpacing: 0.15,
     height: 1.3,
   );
 
-  static TextStyle headlineSmall = GoogleFonts.poppins(
+  static TextStyle headlineSmall = GoogleFonts.playfairDisplay(
     fontSize: 18,
     fontWeight: FontWeight.w600,
     letterSpacing: 0.15,
@@ -60,21 +60,21 @@ class AppTextStyles {
   // Title Styles (Cards, list items, smaller headers)
   // ─────────────────────────────────────────────────────────────────────────
 
-  static TextStyle titleLarge = GoogleFonts.poppins(
+  static TextStyle titleLarge = GoogleFonts.outfit(
     fontSize: 18,
     fontWeight: FontWeight.w500,
     letterSpacing: 0.15,
     height: 1.4,
   );
 
-  static TextStyle titleMedium = GoogleFonts.poppins(
+  static TextStyle titleMedium = GoogleFonts.outfit(
     fontSize: 16,
     fontWeight: FontWeight.w500,
     letterSpacing: 0.15,
     height: 1.4,
   );
 
-  static TextStyle titleSmall = GoogleFonts.poppins(
+  static TextStyle titleSmall = GoogleFonts.outfit(
     fontSize: 14,
     fontWeight: FontWeight.w500,
     letterSpacing: 0.1,
@@ -142,14 +142,14 @@ class AppTextStyles {
     height: 1.4,
   );
 
-  static TextStyle captionBold = GoogleFonts.inter(
+  static TextStyle captionBold = GoogleFonts.outfit(
     fontSize: 12,
     fontWeight: FontWeight.w600,
     letterSpacing: 0.4,
     height: 1.4,
   );
 
-  static TextStyle overline = GoogleFonts.inter(
+  static TextStyle overline = GoogleFonts.outfit(
     fontSize: 10,
     fontWeight: FontWeight.w500,
     letterSpacing: 1.5,
@@ -161,7 +161,7 @@ class AppTextStyles {
   // ─────────────────────────────────────────────────────────────────────────
 
   /// Movie/Series title on cards
-  static TextStyle movieTitle = GoogleFonts.poppins(
+  static TextStyle movieTitle = GoogleFonts.outfit(
     fontSize: 14,
     fontWeight: FontWeight.w600,
     letterSpacing: 0.1,
@@ -169,7 +169,7 @@ class AppTextStyles {
   );
 
   /// Rating text style
-  static TextStyle rating = GoogleFonts.inter(
+  static TextStyle rating = GoogleFonts.outfit(
     fontSize: 14,
     fontWeight: FontWeight.w700,
     letterSpacing: 0.5,
@@ -177,7 +177,7 @@ class AppTextStyles {
   );
 
   /// Year/Duration metadata
-  static TextStyle metadata = GoogleFonts.inter(
+  static TextStyle metadata = GoogleFonts.outfit(
     fontSize: 12,
     fontWeight: FontWeight.w400,
     letterSpacing: 0.4,
@@ -185,7 +185,7 @@ class AppTextStyles {
   );
 
   /// Button text
-  static TextStyle button = GoogleFonts.poppins(
+  static TextStyle button = GoogleFonts.outfit(
     fontSize: 14,
     fontWeight: FontWeight.w600,
     letterSpacing: 0.5,
@@ -193,7 +193,7 @@ class AppTextStyles {
   );
 
   /// Large button text
-  static TextStyle buttonLarge = GoogleFonts.poppins(
+  static TextStyle buttonLarge = GoogleFonts.outfit(
     fontSize: 16,
     fontWeight: FontWeight.w600,
     letterSpacing: 0.5,
@@ -201,7 +201,7 @@ class AppTextStyles {
   );
 
   /// Hero title for main banner
-  static TextStyle heroTitle = GoogleFonts.poppins(
+  static TextStyle heroTitle = GoogleFonts.outfit(
     fontSize: 32,
     fontWeight: FontWeight.w700,
     letterSpacing: -0.5,
@@ -216,7 +216,7 @@ class AppTextStyles {
   );
 
   /// Top 10 ranking number
-  static TextStyle rankingNumber = GoogleFonts.poppins(
+  static TextStyle rankingNumber = GoogleFonts.outfit(
     fontSize: 72,
     fontWeight: FontWeight.w900,
     letterSpacing: -2,

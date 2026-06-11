@@ -5,6 +5,7 @@ import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
+import '../../presentation/providers/auth_error_mapper.dart';
 import '../datasources/auth_remote_data_source.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
@@ -55,10 +56,12 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       final credential = await _remoteDataSource.signInWithGoogle();
       return Right(_mapFirebaseUserToEntity(credential.user!));
+    } on CancelledException {
+      return const Left(CancelledFailure());
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
     } catch (e) {
-      return Left(ServerFailure(e.toString()));
+      return Left(ServerFailure(AuthErrorMapper.map('unknown', e.toString())));
     }
   }
 
@@ -67,10 +70,12 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       final credential = await _remoteDataSource.signInWithApple();
       return Right(_mapFirebaseUserToEntity(credential.user!));
+    } on CancelledException {
+      return const Left(CancelledFailure());
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
     } catch (e) {
-      return Left(ServerFailure(e.toString()));
+      return Left(ServerFailure(AuthErrorMapper.map('unknown', e.toString())));
     }
   }
 

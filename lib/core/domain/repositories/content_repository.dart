@@ -23,9 +23,15 @@ abstract class ContentRepository {
   Future<FilmEntity> getFilmById(String id);
   Future<List<SeriesEntity>> getSeries();
   Future<List<SeriesEntity>> getFeaturedSeries();
+  Future<List<SeriesEntity>> getNewSeries();
   Future<SeriesEntity> getSeriesById(String id);
   Future<List<SeasonEntity>> getSeasons(String seriesId);
   Future<List<EpisodeEntity>> getEpisodes(String seriesId, String seasonId);
+  Future<EpisodeEntity> getEpisodeById(
+    String seriesId,
+    String seasonId,
+    String episodeId,
+  );
   Future<List<FilmEntity>> searchFilms(String query);
   Future<List<SeriesEntity>> searchSeries(String query);
   Future<List<FilmEntity>> getFilmsByGenre(String genre);

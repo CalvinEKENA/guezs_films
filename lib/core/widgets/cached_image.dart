@@ -14,6 +14,7 @@ class CachedImage extends StatelessWidget {
   final Widget? placeholder;
   final Widget? errorWidget;
   final Color? backgroundColor;
+  final Alignment alignment;
 
   const CachedImage({
     super.key,
@@ -25,6 +26,7 @@ class CachedImage extends StatelessWidget {
     this.placeholder,
     this.errorWidget,
     this.backgroundColor,
+    this.alignment = Alignment.center,
   });
 
   @override
@@ -33,30 +35,61 @@ class CachedImage extends StatelessWidget {
       return _buildError();
     }
 
-    // Check if it's a local asset
-    if (imageUrl!.startsWith('assets/') || !imageUrl!.startsWith('http')) {
-      return ClipRRect(
-        borderRadius: borderRadius ?? BorderRadius.circular(8),
-        child: Image.asset(
-          imageUrl!,
-          width: width,
-          height: height,
-          fit: fit,
-          errorBuilder: (context, error, stackTrace) =>
-              errorWidget ?? _buildError(),
-        ),
-      );
+    String path = imageUrl!;
+    
+    // Normalization for Web Assets (Handles spaces and specific content like "Elle et Moi")
+    final lowPath = path.toLowerCase();
+    
+    // Priority 1: Check if this is a known "Elle et Moi" content piece
+    // If so, and we are not explicitly forced to network, we try to use the local asset
+    if (lowPath.contains('elle et moi') || lowPath.contains('elle_et_moi')) {
+      // Extract filename
+      final fileName = path.split('/').last.replaceAll('%20', '_').replaceAll(' ', '_');
+      // Force local asset path for these specific premium assets
+      final assetPath = 'assets/images/$fileName';
+      
+      return _buildAssetImage(assetPath);
     }
 
+    // Priority 2: Standard Asset vs Network Detection
+    if (!path.startsWith('http')) {
+      // Local asset
+      if (!path.startsWith('assets/')) {
+        path = 'assets/$path';
+      }
+      // Clean up spaces for Web compatibility
+      path = path.replaceAll(' ', '_');
+      return _buildAssetImage(path);
+    }
+
+    // Priority 3: Network Image
     return ClipRRect(
       borderRadius: borderRadius ?? BorderRadius.circular(8),
       child: CachedNetworkImage(
-        imageUrl: imageUrl!,
+        imageUrl: path,
         width: width,
         height: height,
         fit: fit,
+        alignment: alignment,
         placeholder: (context, url) => placeholder ?? _buildPlaceholder(),
         errorWidget: (context, url, error) => errorWidget ?? _buildError(),
+      ),
+    );
+  }
+
+  Widget _buildAssetImage(String assetPath) {
+    return ClipRRect(
+      borderRadius: borderRadius ?? BorderRadius.circular(8),
+      child: Image.asset(
+        assetPath,
+        width: width,
+        height: height,
+        fit: fit,
+        alignment: alignment,
+        errorBuilder: (context, error, stackTrace) {
+          debugPrint('Asset image not found: $assetPath. Falling back to error widget.');
+          return errorWidget ?? _buildError();
+        },
       ),
     );
   }
@@ -100,6 +133,7 @@ class MoviePoster extends StatelessWidget {
   final BorderRadius? borderRadius;
   final VoidCallback? onTap;
   final bool showShadow;
+  final Alignment alignment;
 
   const MoviePoster({
     super.key,
@@ -108,6 +142,7 @@ class MoviePoster extends StatelessWidget {
     this.borderRadius,
     this.onTap,
     this.showShadow = true,
+    this.alignment = Alignment.center,
   });
 
   @override
@@ -134,6 +169,7 @@ class MoviePoster extends StatelessWidget {
           width: width,
           height: width * 1.5,
           borderRadius: borderRadius ?? BorderRadius.circular(8),
+          alignment: alignment,
         ),
       ),
     );

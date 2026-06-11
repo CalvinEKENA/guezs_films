@@ -44,6 +44,14 @@
       "collectionGroup": "series",
       "queryScope": "COLLECTION",
       "fields": [
+        { "fieldPath": "isNew", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "series",
+      "queryScope": "COLLECTION",
+      "fields": [
         { "fieldPath": "genres", "arrayConfig": "CONTAINS" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]

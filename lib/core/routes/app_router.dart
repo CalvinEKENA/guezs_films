@@ -14,9 +14,12 @@ import 'package:guezs_films/features/downloads/presentation/pages/downloads_page
 import 'package:guezs_films/features/profile/presentation/pages/profile_page.dart';
 import 'package:guezs_films/features/details/presentation/pages/details_page.dart';
 import 'package:guezs_films/features/player/presentation/pages/player_page.dart';
+import 'package:guezs_films/features/player/presentation/pages/watch_episode_page.dart';
+import 'package:guezs_films/features/player/presentation/pages/watch_film_page.dart';
 import 'package:guezs_films/features/series/presentation/pages/series_details_page.dart';
 import 'package:guezs_films/core/widgets/main_scaffold.dart';
 import 'package:guezs_films/core/routes/route_constants.dart';
+import 'package:guezs_films/features/profile/presentation/pages/profile_selector_page.dart';
 
 /// App Router Configuration
 /// Handles all navigation with go_router
@@ -46,19 +49,21 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       if (isLoading || hasError) return null;
 
+      final path = state.uri.path;
       final isAuthRoute =
-          state.uri.path == Routes.login ||
-          state.uri.path == Routes.forgotPassword ||
-          state.uri.path == Routes.onboarding ||
-          state.uri.path == Routes.splash;
+          path == Routes.login ||
+          path == Routes.forgotPassword ||
+          path == Routes.onboarding ||
+          path == Routes.splash;
+      final isProfileSelector = path == Routes.profileSelector;
 
       if (user == null) {
-        // If not logged in and trying to access protected route, go to login
-        return isAuthRoute ? null : Routes.login;
+        // Non connecté → login (sauf si déjà sur une route auth)
+        return isAuthRoute || isProfileSelector ? null : Routes.login;
       }
 
-      // If logged in and on auth route, go home
-      if (isAuthRoute) return Routes.home;
+      // Connecté + route auth → sélecteur de profil
+      if (isAuthRoute) return Routes.profileSelector;
 
       return null;
     },
@@ -110,6 +115,20 @@ class AppRouter {
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(opacity: animation, child: child);
         },
+      ),
+    ),
+
+    // ─────────────────────────────────────────────────────────────────────
+    // Profile Selector (shown after login, before entering the app)
+    // ─────────────────────────────────────────────────────────────────────
+    GoRoute(
+      path: Routes.profileSelector,
+      name: 'profile-selector',
+      pageBuilder: (context, state) => CustomTransitionPage(
+        key: state.pageKey,
+        child: const ProfileSelectorPage(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+            FadeTransition(opacity: animation, child: child),
       ),
     ),
 
@@ -191,16 +210,60 @@ class AppRouter {
     ),
 
     GoRoute(
+      path: Routes.watchFilm,
+      name: 'watch-film',
+      pageBuilder: (context, state) {
+        final filmId = state.pathParameters['filmId'] ?? '';
+        return CustomTransitionPage(
+          key: state.pageKey,
+          child: WatchFilmPage(filmId: filmId),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+        );
+      },
+    ),
+
+    GoRoute(
+      path: Routes.watchEpisode,
+      name: 'watch-episode',
+      pageBuilder: (context, state) {
+        final seriesId = state.pathParameters['seriesId'] ?? '';
+        final seasonId = state.pathParameters['seasonId'] ?? '';
+        final episodeId = state.pathParameters['episodeId'] ?? '';
+        return CustomTransitionPage(
+          key: state.pageKey,
+          child: WatchEpisodePage(
+            seriesId: seriesId,
+            seasonId: seasonId,
+            episodeId: episodeId,
+          ),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+        );
+      },
+    ),
+
+    // Deprecated legacy player route.
+    // Keep temporarily for local downloads and old links that still transport
+    // a video URL. Product playback must use the refresh-safe /watch routes.
+    GoRoute(
       path: Routes.player,
       name: 'player',
       pageBuilder: (context, state) {
         final extra = state.extra as Map<String, dynamic>? ?? {};
+        final query = state.uri.queryParameters;
         return CustomTransitionPage(
           key: state.pageKey,
           child: PlayerPage(
-            videoUrl: extra['videoUrl'] as String? ?? '',
-            title: extra['title'] as String? ?? '',
-            posterUrl: extra['posterUrl'] as String?,
+            videoUrl:
+                extra['videoUrl'] as String? ??
+                query['url'] ??
+                query['videoUrl'] ??
+                '',
+            title: extra['title'] as String? ?? query['title'] ?? '',
+            posterUrl: extra['posterUrl'] as String? ?? query['posterUrl'],
           ),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return FadeTransition(opacity: animation, child: child);

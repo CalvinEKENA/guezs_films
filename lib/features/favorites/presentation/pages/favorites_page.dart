@@ -3,7 +3,9 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/providers/content_providers.dart';
 import '../../../../core/routes/route_constants.dart';
+import '../../domain/entities/favorite_movie.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/cached_image.dart';
@@ -88,10 +90,7 @@ class FavoritesPage extends ConsumerWidget {
                           child: Stack(
                             children: [
                               Positioned.fill(
-                                child: CachedImage(
-                                  imageUrl: favorite.posterPath,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
+                                child: _FavoritePoster(favorite: favorite),
                               ),
                               Positioned(
                                 top: 8,
@@ -114,6 +113,31 @@ class FavoritesPage extends ConsumerWidget {
                                     style: AppTextStyles.caption.copyWith(
                                       color: AppColors.accent,
                                       fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                top: 4,
+                                right: 4,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    ref
+                                        .read(favoritesProvider.notifier)
+                                        .toggleFavorite(favorite);
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.45,
+                                      ),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.close_rounded,
+                                      color: Colors.white,
+                                      size: 16,
                                     ),
                                   ),
                                 ),
@@ -149,6 +173,60 @@ class FavoritesPage extends ConsumerWidget {
             style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Affiche le poster du favori.
+/// Si posterPath est vide, fetche le posterUrl actuel depuis Firestore.
+class _FavoritePoster extends ConsumerWidget {
+  const _FavoritePoster({required this.favorite});
+
+  final FavoriteMovie favorite;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (favorite.posterPath.isNotEmpty) {
+      return CachedImage(
+        imageUrl: favorite.posterPath,
+        borderRadius: BorderRadius.circular(8),
+      );
+    }
+
+    if (favorite.contentType == 'series') {
+      final seriesAsync = ref.watch(seriesDetailsProvider(favorite.id));
+      return seriesAsync.when(
+        data: (series) => CachedImage(
+          imageUrl: series.posterUrl,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        loading: () => ShimmerLoading(
+          width: double.infinity,
+          height: double.infinity,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        error: (err, stack) => CachedImage(
+          imageUrl: null,
+          borderRadius: BorderRadius.circular(8),
+        ),
+      );
+    }
+
+    final filmAsync = ref.watch(filmDetailsProvider(favorite.id));
+    return filmAsync.when(
+      data: (film) => CachedImage(
+        imageUrl: film.posterUrl,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      loading: () => ShimmerLoading(
+        width: double.infinity,
+        height: double.infinity,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      error: (err, stack) => CachedImage(
+        imageUrl: null,
+        borderRadius: BorderRadius.circular(8),
       ),
     );
   }

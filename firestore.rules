@@ -53,6 +53,11 @@ service cloud.firestore {
       match /favorites/{favId} {
         allow read, write: if isOwner(userId);
       }
+
+      // Multi-profile management
+      match /profiles/{profileId} {
+        allow read, write: if isOwner(userId);
+      }
     }
     
     // ─── Search analytics / metadata (Optional future use) ───────────────────

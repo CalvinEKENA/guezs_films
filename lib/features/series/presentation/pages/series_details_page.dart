@@ -158,7 +158,7 @@ class _SeriesDetailsPageState extends ConsumerState<SeriesDetailsPage> {
                       seasonsAsync.when(
                         data: (seasons) => _buildSeasonsAndEpisodes(
                           seriesId: series.id,
-                          posterUrl: series.posterUrl,
+                          seriesTitle: series.title,
                           seasons: seasons,
                         ),
                         loading: () => const ShimmerContentRow(
@@ -220,7 +220,7 @@ class _SeriesDetailsPageState extends ConsumerState<SeriesDetailsPage> {
 
   Widget _buildSeasonsAndEpisodes({
     required String seriesId,
-    required String posterUrl,
+    required String seriesTitle,
     required List<SeasonEntity> seasons,
   }) {
     if (seasons.isEmpty) {
@@ -303,12 +303,13 @@ class _SeriesDetailsPageState extends ConsumerState<SeriesDetailsPage> {
                         title: episode.title,
                         description: episode.description,
                         duration: _formatDurationSeconds(episode.durationSec),
-                        episodeLabel: 'Épisode ${episode.episodeNumber}',
+                        episodeNumber: episode.episodeNumber,
+                        seriesTitle: seriesTitle,
                         thumbnailUrl: episode.thumbnailUrl,
                         onTap: () => _playEpisode(
-                          videoUrl: episode.videoUrl,
-                          title: episode.title,
-                          posterUrl: posterUrl,
+                          seriesId: seriesId,
+                          seasonId: selectedSeasonId,
+                          episodeId: episode.id,
                         ),
                       ),
                     ),
@@ -447,16 +448,19 @@ class _SeriesDetailsPageState extends ConsumerState<SeriesDetailsPage> {
   }
 
   void _playEpisode({
-    required String videoUrl,
-    required String title,
-    required String posterUrl,
+    required String seriesId,
+    required String seasonId,
+    required String episodeId,
   }) {
     showPromoCodeDialog(
       context,
       onSuccess: () {
         context.push(
-          Routes.player,
-          extra: {'videoUrl': videoUrl, 'title': title, 'posterUrl': posterUrl},
+          Routes.episodeWatchPath(
+            seriesId: seriesId,
+            seasonId: seasonId,
+            episodeId: episodeId,
+          ),
         );
       },
     );
@@ -468,7 +472,8 @@ class _EpisodeCard extends StatelessWidget {
     required this.title,
     required this.description,
     required this.duration,
-    required this.episodeLabel,
+    required this.episodeNumber,
+    required this.seriesTitle,
     required this.thumbnailUrl,
     required this.onTap,
   });
@@ -476,73 +481,233 @@ class _EpisodeCard extends StatelessWidget {
   final String title;
   final String description;
   final String duration;
-  final String episodeLabel;
+  final int episodeNumber;
+  final String seriesTitle;
   final String thumbnailUrl;
   final VoidCallback onTap;
+
+  String get _epBadge => 'Ep.${episodeNumber.toString().padLeft(2, '0')}';
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: CachedImage(
-                imageUrl: thumbnailUrl,
-                width: 160,
-                height: 90,
+          onTap: onTap,
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: AppColors.border.withValues(alpha: 0.6),
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.45),
+                  blurRadius: 14,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Stack(
                 children: [
-                  Text(
-                    episodeLabel,
-                    style: AppTextStyles.caption.copyWith(
-                      color: AppColors.accent,
+                  // ── Image de fond 16:9 ─────────────────────────────────────
+                  AspectRatio(
+                    aspectRatio: 16 / 9,
+                    child: CachedImage(
+                      imageUrl: thumbnailUrl,
+                      borderRadius: BorderRadius.zero,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    title,
-                    style: AppTextStyles.titleSmall.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.bold,
+
+                  // ── Gradient sombre bas ─────────────────────────────────────
+                  Positioned.fill(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.15),
+                            Colors.black.withValues(alpha: 0.75),
+                            Colors.black.withValues(alpha: 0.92),
+                          ],
+                          stops: const [0.0, 0.38, 0.72, 1.0],
+                        ),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    duration,
-                    style: AppTextStyles.caption.copyWith(
-                      color: AppColors.textTertiary,
+
+                  // ── Badge épisode (haut gauche) ────────────────────────────
+                  Positioned(
+                    top: 12,
+                    left: 14,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.55),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        _epBadge,
+                        style: AppTextStyles.labelMedium.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    description,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
+
+                  // ── Durée (haut droite) — uniquement si non nulle ──────────
+                  if (duration != '00:00')
+                    Positioned(
+                      top: 12,
+                      right: 14,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 9,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.6),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.15),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.schedule_rounded,
+                              size: 11,
+                              color: AppColors.textTertiary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              duration,
+                              style: AppTextStyles.caption.copyWith(
+                                color: AppColors.textTertiary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                  // ── Bouton play central ────────────────────────────────────
+                  Positioned.fill(
+                    child: Center(
+                      child: Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.18),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.45),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.play_arrow_rounded,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // ── Texte bas (série + titre) ──────────────────────────────
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            seriesTitle.toUpperCase(),
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.accent,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.4,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            title,
+                            style: AppTextStyles.titleSmall.copyWith(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w800,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (description.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              description,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: AppColors.textSecondary.withValues(
+                                  alpha: 0.8,
+                                ),
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // ── Filet accent gauche ────────────────────────────────────
+                  Positioned(
+                    top: 0,
+                    bottom: 0,
+                    left: 0,
+                    child: Container(
+                      width: 4,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            AppColors.primary.withValues(alpha: 0.0),
+                            AppColors.primary,
+                            AppColors.primary.withValues(alpha: 0.0),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
-      ),
-    );
+          ),
+        )
+        .animate()
+        .fadeIn(duration: 380.ms, curve: Curves.easeOut)
+        .slideY(begin: 0.04, end: 0, duration: 380.ms, curve: Curves.easeOut);
   }
 }

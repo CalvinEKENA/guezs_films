@@ -28,3 +28,8 @@ class AuthFailure extends Failure {
 class ValidationFailure extends Failure {
   const ValidationFailure([super.message = 'Validation failed']);
 }
+
+/// User-cancelled action — should be handled silently (no error shown)
+class CancelledFailure extends Failure {
+  const CancelledFailure() : super('');
+}

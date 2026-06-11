@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/providers/content_providers.dart';
+import '../../../../core/platform/platform_capabilities.dart';
 import '../../../../core/routes/route_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -69,11 +70,7 @@ class _DetailsPageState extends ConsumerState<DetailsPage> {
                 child: _buildBackdrop(
                   height: MediaQuery.of(context).size.height * 0.42,
                   backdropUrl: film.backdropUrl,
-                  onPlay: () => _playFilm(
-                    videoUrl: film.videoUrl,
-                    title: film.title,
-                    posterUrl: film.posterUrl,
-                  ),
+                  onPlay: () => _playFilm(film.id),
                 ),
               ),
               SliverToBoxAdapter(
@@ -125,35 +122,35 @@ class _DetailsPageState extends ConsumerState<DetailsPage> {
                             child: GradientButton(
                               text: 'Lire',
                               icon: Icons.play_arrow_rounded,
-                              onPressed: () => _playFilm(
-                                videoUrl: film.videoUrl,
-                                title: film.title,
-                                posterUrl: film.posterUrl,
-                              ),
+                              onPressed: () => _playFilm(film.id),
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 12),
                           _buildDownloadButton(ref, film),
-                          const SizedBox(width: 8),
-                          _buildActionButton(
-                            icon: isFavorite ? Icons.check : Icons.add,
-                            label: 'Favori',
-                            onTap: () {
-                              ref
-                                  .read(favoritesProvider.notifier)
-                                  .toggleFavorite(
-                                    FavoriteMovie(
-                                      id: film.id,
-                                      title: film.title,
-                                      posterPath: film.posterUrl,
-                                      contentType: 'film',
-                                      addedAt: DateTime.now().toIso8601String(),
-                                    ),
-                                  );
-                            },
-                          ),
                         ],
                       ).animate().fadeIn(delay: 200.ms),
+                      const SizedBox(height: 12),
+                      GradientButton(
+                        text: isFavorite
+                            ? 'Retirer de ma liste'
+                            : 'Ajouter à ma liste',
+                        icon: isFavorite
+                            ? Icons.check_rounded
+                            : Icons.add_rounded,
+                        onPressed: () {
+                          ref
+                              .read(favoritesProvider.notifier)
+                              .toggleFavorite(
+                                FavoriteMovie(
+                                  id: film.id,
+                                  title: film.title,
+                                  posterPath: film.posterUrl,
+                                  contentType: 'film',
+                                  addedAt: DateTime.now().toIso8601String(),
+                                ),
+                              );
+                        },
+                      ).animate().fadeIn(delay: 250.ms),
                       const SizedBox(height: 24),
                       Text(
                         'Synopsis',
@@ -388,18 +385,11 @@ class _DetailsPageState extends ConsumerState<DetailsPage> {
     return '$hours h ${minutes.toString().padLeft(2, '0')}';
   }
 
-  void _playFilm({
-    required String videoUrl,
-    required String title,
-    required String posterUrl,
-  }) {
+  void _playFilm(String filmId) {
     showPromoCodeDialog(
       context,
       onSuccess: () {
-        context.push(
-          Routes.player,
-          extra: {'videoUrl': videoUrl, 'title': title, 'posterUrl': posterUrl},
-        );
+        context.push(Routes.filmWatchPath(filmId));
       },
     );
   }
@@ -410,11 +400,31 @@ class _DetailsPageState extends ConsumerState<DetailsPage> {
     final isCompleted = downloadState?.status == DownloadStatus.completed;
 
     return _buildActionButton(
-      icon: isCompleted ? Icons.download_done : (isDownloading ? Icons.hourglass_empty : Icons.download_rounded),
-      label: isCompleted ? 'Terminé' : (isDownloading ? '${(downloadState!.progress * 100).toInt()}%' : 'D/L'),
-      onTap: () {
+      icon: isCompleted
+          ? Icons.download_done
+          : (isDownloading ? Icons.hourglass_empty : Icons.download_rounded),
+      label: isCompleted
+          ? 'Terminé'
+          : (isDownloading
+                ? '${(downloadState!.progress * 100).toInt()}%'
+                : 'D/L'),
+      onTap: () async {
         if (isCompleted || isDownloading) return;
-        ref.read(downloadServiceProvider).startDownload(
+        if (!PlatformCapabilities.supportsDownloads) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Les téléchargements hors-ligne ne sont pas encore disponibles sur cette plateforme.',
+              ),
+              backgroundColor: AppColors.error,
+            ),
+          );
+          return;
+        }
+        final scaffoldMessenger = ScaffoldMessenger.of(context);
+        await ref
+            .read(downloadServiceProvider)
+            .startDownload(
               DownloadItem(
                 id: film.id,
                 title: film.title,
@@ -423,14 +433,16 @@ class _DetailsPageState extends ConsumerState<DetailsPage> {
                 localPath: '',
               ),
             );
-        ScaffoldMessenger.of(context).showSnackBar(
+        scaffoldMessenger.showSnackBar(
           const SnackBar(
             content: Text('Le téléchargement a démarré.'),
             backgroundColor: AppColors.primary,
           ),
         );
       },
-      color: isCompleted ? AppColors.accent : (isDownloading ? AppColors.info : null),
+      color: isCompleted
+          ? AppColors.accent
+          : (isDownloading ? AppColors.info : null),
     );
   }
 }

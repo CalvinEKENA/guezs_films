@@ -12,9 +12,15 @@ abstract class FirebaseContentDataSource {
   Future<FilmModel> getFilmById(String id);
   Future<List<SeriesModel>> getSeries();
   Future<List<SeriesModel>> getFeaturedSeries();
+  Future<List<SeriesModel>> getNewSeries();
   Future<SeriesModel> getSeriesById(String id);
   Future<List<SeasonModel>> getSeasons(String seriesId);
   Future<List<EpisodeModel>> getEpisodes(String seriesId, String seasonId);
+  Future<EpisodeModel> getEpisodeById(
+    String seriesId,
+    String seasonId,
+    String episodeId,
+  );
   Future<List<FilmModel>> searchFilms(String query);
   Future<List<SeriesModel>> searchSeries(String query);
   Future<List<FilmModel>> getFilmsByGenre(String genre);
@@ -85,6 +91,14 @@ class FirebaseContentDataSourceImpl implements FirebaseContentDataSource {
   }
 
   @override
+  Future<List<SeriesModel>> getNewSeries() async {
+    final snapshot = await _seriesCollection
+        .where('isNew', isEqualTo: true)
+        .get();
+    return snapshot.docs.map(SeriesModel.fromFirestore).toList(growable: false);
+  }
+
+  @override
   Future<SeriesModel> getSeriesById(String id) async {
     final doc = await _seriesCollection.doc(id).get();
     if (!doc.exists) {
@@ -128,6 +142,31 @@ class FirebaseContentDataSourceImpl implements FirebaseContentDataSource {
           ),
         )
         .toList(growable: false);
+  }
+
+  @override
+  Future<EpisodeModel> getEpisodeById(
+    String seriesId,
+    String seasonId,
+    String episodeId,
+  ) async {
+    final doc = await _seriesCollection
+        .doc(seriesId)
+        .collection('seasons')
+        .doc(seasonId)
+        .collection('episodes')
+        .doc(episodeId)
+        .get();
+
+    if (!doc.exists) {
+      throw StateError('Episode introuvable: $episodeId');
+    }
+
+    return EpisodeModel.fromFirestore(
+      seriesId: seriesId,
+      seasonId: seasonId,
+      doc: doc,
+    );
   }
 
   @override

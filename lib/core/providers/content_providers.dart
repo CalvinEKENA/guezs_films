@@ -52,6 +52,10 @@ final featuredSeriesProvider = FutureProvider<List<SeriesEntity>>((ref) async {
   return ref.watch(contentRepositoryProvider).getFeaturedSeries();
 });
 
+final newSeriesProvider = FutureProvider<List<SeriesEntity>>((ref) async {
+  return ref.watch(contentRepositoryProvider).getNewSeries();
+});
+
 final seriesDetailsProvider = FutureProvider.family<SeriesEntity, String>((
   ref,
   id,
@@ -76,6 +80,16 @@ final episodesProvider =
           .getEpisodes(params.seriesId, params.seasonId);
     });
 
+final episodeDetailsProvider =
+    FutureProvider.family<
+      EpisodeEntity,
+      ({String seriesId, String seasonId, String episodeId})
+    >((ref, params) async {
+      return ref
+          .watch(contentRepositoryProvider)
+          .getEpisodeById(params.seriesId, params.seasonId, params.episodeId);
+    });
+
 final searchFilmsProvider = FutureProvider.family<List<FilmEntity>, String>((
   ref,
   query,
@@ -97,9 +111,8 @@ final filmsByGenreProvider = FutureProvider.family<List<FilmEntity>, String>((
   return ref.watch(contentRepositoryProvider).getFilmsByGenre(genre);
 });
 
-final seriesByGenreProvider = FutureProvider.family<List<SeriesEntity>, String>((
-  ref,
-  genre,
-) async {
-  return ref.watch(contentRepositoryProvider).getSeriesByGenre(genre);
-});
+final seriesByGenreProvider = FutureProvider.family<List<SeriesEntity>, String>(
+  (ref, genre) async {
+    return ref.watch(contentRepositoryProvider).getSeriesByGenre(genre);
+  },
+);

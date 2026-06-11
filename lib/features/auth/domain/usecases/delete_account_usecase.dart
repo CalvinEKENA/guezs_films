@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dartz/dartz.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -8,13 +6,14 @@ import 'package:hive/hive.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/errors/failures.dart';
 import '../repositories/auth_repository.dart';
+import 'delete_account_local_cleanup.dart';
 
 class DeleteAccountUseCase {
   const DeleteAccountUseCase({
     required AuthRepository authRepository,
     required FirebaseFirestore firestore,
-  })  : _authRepository = authRepository,
-        _firestore = firestore;
+  }) : _authRepository = authRepository,
+       _firestore = firestore;
 
   final AuthRepository _authRepository;
   final FirebaseFirestore _firestore;
@@ -27,6 +26,7 @@ class DeleteAccountUseCase {
       final uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid == null) return const Left(AuthFailure('No authenticated user'));
 
+      // TODO: Move full user data deletion to an idempotent admin Cloud Function.
       // 1. Supprimer le compte Firebase Auth EN PREMIER (irréversible — doit réussir avant tout nettoyage)
       final result = await _authRepository.deleteAccount(credential);
       if (result.isLeft()) return result; // propagate failure
@@ -80,17 +80,7 @@ class DeleteAccountUseCase {
     if (Hive.isBoxOpen(AppConstants.downloadBox)) {
       if (deleteDownloads) {
         final box = Hive.box(AppConstants.downloadBox);
-        for (final item in box.values) {
-          try {
-            final dynamic d = item;
-            // localPath is the field name in DownloadItemModel (HiveField(4))
-            final path = d.localPath as String?;
-            if (path != null && path.isNotEmpty) {
-              final file = File(path);
-              if (await file.exists()) await file.delete();
-            }
-          } catch (_) {}
-        }
+        await deleteLocalDownloadFiles(box.values);
       }
       await Hive.box(AppConstants.downloadBox).clear();
     }

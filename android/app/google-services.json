@@ -37,6 +37,49 @@
             {
               "client_id": "682820949159-vo9talk0vd4mmkofqd5d57m55m0o0nk3.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "682820949159-62hcgbhqr3grr4ucqc1jchpoavrc0pka.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.guezfilms.app"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:682820949159:android:45da8bda3d717a367ab782",
+        "android_client_info": {
+          "package_name": "com.guezsfilms.premium"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "682820949159-vo9talk0vd4mmkofqd5d57m55m0o0nk3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBgYuhnbUrKu4hU0BMzlEcEpS-IAHliAXU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "682820949159-vo9talk0vd4mmkofqd5d57m55m0o0nk3.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "682820949159-62hcgbhqr3grr4ucqc1jchpoavrc0pka.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.guezfilms.app"
+              }
             }
           ]
         }

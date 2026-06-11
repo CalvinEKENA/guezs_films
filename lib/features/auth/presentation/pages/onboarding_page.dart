@@ -2,20 +2,22 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/onboarding_provider.dart';
 import '../../../../core/routes/route_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 
 enum _Phase { s1, s2, s3, s4, logo, done }
 
-class OnboardingPage extends StatefulWidget {
+class OnboardingPage extends ConsumerStatefulWidget {
   const OnboardingPage({super.key});
 
   @override
-  State<OnboardingPage> createState() => _OnboardingPageState();
+  ConsumerState<OnboardingPage> createState() => _OnboardingPageState();
 }
 
-class _OnboardingPageState extends State<OnboardingPage> {
+class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   _Phase _phase = _Phase.s1;
   Timer? _timer;
 
@@ -34,24 +36,28 @@ class _OnboardingPageState extends State<OnboardingPage> {
       number: '01 — 04',
       title: 'Le cinéma africain,\nen lumière.',
       subtitle: 'Des œuvres qui parlent de nous,\nracontées par nous.',
+      imagePath: 'assets/images/onboarding_1.png',
     ),
     _ScreenData(
       phase: _Phase.s2,
       number: '02 — 04',
       title: 'Les créateurs d\'ici,\nà l\'honneur.',
       subtitle: 'Talents camerounais et africains\nau premier plan.',
+      imagePath: 'assets/images/onboarding_2.png',
     ),
     _ScreenData(
       phase: _Phase.s3,
       number: '03 — 04',
       title: 'Votre culture.\nVotre écran.',
       subtitle: 'Séries originales, films exclusifs,\nhistoires locales.',
+      imagePath: 'assets/images/onboarding_3.png',
     ),
     _ScreenData(
       phase: _Phase.s4,
       number: '04 — 04',
       title: 'Une nouvelle ère\ncommence.',
       subtitle: 'Guezs Films. Tout le cinéma africain.',
+      imagePath: 'assets/images/onboarding_4.png',
     ),
   ];
 
@@ -86,6 +92,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
         case _Phase.logo:
           _phase = _Phase.done;
           _timer = null;
+          // Mark onboarding as complete in Hive
+          ref.read(onboardingProvider.notifier).completeOnboarding();
           context.go(Routes.login, extra: {'isLogin': false});
         case _Phase.done:
           break;
@@ -103,22 +111,66 @@ class _OnboardingPageState extends State<OnboardingPage> {
   Widget build(BuildContext context) {
     final isLogoPhase = _phase == _Phase.logo;
     final ambientColor = _ambientColors[_phase];
+    final currentScreen = _screens.firstWhere(
+      (s) => s.phase == _phase,
+      orElse: () => _screens.first,
+    );
 
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
         fit: StackFit.expand,
         children: [
+          // Image de fond cinématographique avec effet de zoom subtil et fondu
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 1500),
+            transitionBuilder: (child, animation) {
+              final scaleAnimation = Tween<double>(begin: 1.05, end: 1.0).animate(
+                CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+              );
+              return FadeTransition(
+                opacity: animation,
+                child: ScaleTransition(scale: scaleAnimation, child: child),
+              );
+            },
+            child: isLogoPhase
+                ? Container(key: const ValueKey('black_bg'), color: Colors.black)
+                : Image.asset(
+                    currentScreen.imagePath,
+                    key: ValueKey(currentScreen.imagePath),
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: double.infinity,
+                    alignment: Alignment.topCenter,
+                  ),
+          ),
+
+          // Superposition de gradients pour contraste premium
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withValues(alpha: 0.1),
+                  Colors.black.withValues(alpha: 0.4),
+                  Colors.black.withValues(alpha: 0.95),
+                ],
+                stops: const [0.0, 0.5, 1.0],
+              ),
+            ),
+          ),
+
           // Fond ambiant animé (couleur subtile)
           AnimatedContainer(
             duration: const Duration(milliseconds: 800),
             decoration: BoxDecoration(
               gradient: RadialGradient(
-                center: Alignment.center,
+                center: const Alignment(0, 0.5),
                 radius: 1.2,
                 colors: [
-                  (ambientColor ?? Colors.transparent).withValues(alpha: 0.06),
-                  Colors.black,
+                  (ambientColor ?? Colors.transparent).withValues(alpha: 0.15),
+                  Colors.transparent,
                 ],
               ),
             ),
@@ -393,11 +445,13 @@ class _ScreenData {
   final String number;
   final String title;
   final String subtitle;
+  final String imagePath;
 
   const _ScreenData({
     required this.phase,
     required this.number,
     required this.title,
     required this.subtitle,
+    required this.imagePath,
   });
 }

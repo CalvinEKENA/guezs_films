@@ -1,8 +1,8 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:guezs_films/core/platform/platform_capabilities.dart';
 import 'package:guezs_films/core/routes/route_constants.dart';
 import 'package:guezs_films/core/theme/app_colors.dart';
 import 'package:guezs_films/core/theme/app_text_styles.dart';
@@ -81,12 +81,23 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           ),
         );
       } else if (next is AsyncData && next.value != null) {
-        context.go(Routes.home);
+        context.go(Routes.profileSelector);
       }
     });
 
     final authState = ref.watch(authControllerProvider);
     final isLoading = authState is AsyncLoading;
+
+    // Détection d'erreur spécifique pour message d'aide (ex: Google Redirect)
+    String? helperMessage;
+    if (authState is AsyncError) {
+      final errorStr = authState.error.toString();
+      if (errorStr.contains('192.168.100.203') ||
+          errorStr.contains('redirect_uri_mismatch')) {
+        helperMessage =
+            "⚙️ Configuration : Ajoutez l'IP 192.168.100.203 dans les domaines autorisés de votre console Firebase.";
+      }
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -161,6 +172,35 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
                                     const SizedBox(height: 32),
 
+                                    // Message d'aide si erreur de configuration
+                                    if (helperMessage != null) ...[
+                                      Container(
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primary.withValues(
+                                            alpha: 0.1,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          border: Border.all(
+                                            color: AppColors.primary.withValues(
+                                              alpha: 0.3,
+                                            ),
+                                          ),
+                                        ),
+                                        child: Text(
+                                          helperMessage,
+                                          style: AppTextStyles.bodySmall
+                                              .copyWith(
+                                                color: AppColors.primary,
+                                              ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 24),
+                                    ],
+
                                     // Name field (only for signup)
                                     if (!_isLogin) ...[
                                       TextFormField(
@@ -184,6 +224,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                     TextFormField(
                                       controller: _emailController,
                                       keyboardType: TextInputType.emailAddress,
+                                      autofillHints: const [
+                                        AutofillHints.email,
+                                      ],
+                                      textInputAction: TextInputAction.next,
                                       style: AppTextStyles.bodyMedium.copyWith(
                                         color: AppColors.textPrimary,
                                       ),
@@ -211,11 +255,24 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                     TextFormField(
                                       controller: _passwordController,
                                       obscureText: _obscurePassword,
+                                      autofillHints: const [
+                                        AutofillHints.password,
+                                      ],
+                                      textInputAction: _isLogin
+                                          ? TextInputAction.done
+                                          : TextInputAction.next,
+                                      onFieldSubmitted: (_) =>
+                                          _isLogin ? _submit() : null,
                                       style: AppTextStyles.bodyMedium.copyWith(
                                         color: AppColors.textPrimary,
                                       ),
                                       decoration: InputDecoration(
                                         labelText: 'Mot de passe',
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                              horizontal: 16,
+                                              vertical: 16,
+                                            ),
                                         prefixIcon: const Icon(
                                           Icons.lock_outlined,
                                           color: AppColors.textTertiary,
@@ -308,43 +365,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
                                     const SizedBox(height: 24),
 
-                                    // Social login buttons
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        if (Platform.isAndroid ||
-                                            Platform.isWindows)
-                                          _SocialButton(
-                                            assetPath:
-                                                'assets/icons/google.png',
-                                            onTap: () {
-                                              ref
-                                                  .read(
-                                                    authControllerProvider
-                                                        .notifier,
-                                                  )
-                                                  .signInWithGoogle();
-                                            },
-                                          ),
-                                        if ((Platform.isAndroid ||
-                                                Platform.isWindows) &&
-                                            (Platform.isIOS ||
-                                                Platform.isWindows))
-                                          const SizedBox(width: 16),
-                                        if (Platform.isIOS ||
-                                            Platform.isWindows)
-                                          _SocialButton(
-                                            assetPath: 'assets/icons/apple.png',
-                                            onTap: () {
-                                              ref
-                                                  .read(authControllerProvider
-                                                      .notifier)
-                                                  .signInWithApple();
-                                            },
-                                          ),
-                                      ],
-                                    ),
+                                    _buildSocialLoginButtons(),
                                   ],
                                 ),
                               ),
@@ -393,6 +414,46 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   Widget _buildLogo() {
     return Center(
       child: Image.asset('assets/icons/logo.png', width: 100, height: 100),
+    );
+  }
+
+  Widget _buildSocialLoginButtons() {
+    final buttons = <Widget>[];
+
+    if (PlatformCapabilities.supportsGoogleSignIn) {
+      buttons.add(
+        _SocialButton(
+          assetPath: 'assets/icons/google.png',
+          onTap: () {
+            ref.read(authControllerProvider.notifier).signInWithGoogle();
+          },
+        ),
+      );
+    }
+
+    if (PlatformCapabilities.supportsAppleSignIn) {
+      buttons.add(
+        _SocialButton(
+          assetPath: 'assets/icons/apple.png',
+          onTap: () {
+            ref.read(authControllerProvider.notifier).signInWithApple();
+          },
+        ),
+      );
+    }
+
+    if (buttons.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        for (var index = 0; index < buttons.length; index++) ...[
+          if (index > 0) const SizedBox(width: 16),
+          buttons[index],
+        ],
+      ],
     );
   }
 }

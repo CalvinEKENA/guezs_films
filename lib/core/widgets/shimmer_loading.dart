@@ -83,19 +83,9 @@ class ShimmerContentRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Title shimmer
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: ShimmerLoading.text(width: 150, height: 20),
-        ),
-        const SizedBox(height: 12),
-        // Content shimmer
-        SizedBox(
-          height: itemWidth * 1.5 + 36,
-          child: ListView.separated(
+    return SizedBox(
+      height: itemWidth * 1.5 + 44,
+      child: ListView.separated(
             scrollDirection: Axis.horizontal,
             physics: const NeverScrollableScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -112,8 +102,6 @@ class ShimmerContentRow extends StatelessWidget {
               ],
             ),
           ),
-        ),
-      ],
     );
   }
 }

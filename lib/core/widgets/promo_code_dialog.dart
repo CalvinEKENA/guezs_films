@@ -7,6 +7,7 @@ import 'gradient_button.dart';
 import 'glass_card.dart';
 
 /// A premium dialog to enter a 6-digit promo code featuring our influencers
+/// Polished version: Responsive, invisible input, and stable cross-platform behavior
 class PromoCodeDialog extends StatefulWidget {
   final VoidCallback onSuccess;
 
@@ -17,43 +18,40 @@ class PromoCodeDialog extends StatefulWidget {
 }
 
 class _PromoCodeDialogState extends State<PromoCodeDialog> {
-  final List<TextEditingController> _controllers = List.generate(
-    6,
-    (_) => TextEditingController(),
-  );
-  final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
+  final TextEditingController _controller = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
   bool _isError = false;
   bool _isLoading = false;
   String? _successInfluencer;
 
   @override
+  void initState() {
+    super.initState();
+    // Auto-focus after dialog animation ends
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        _focusNode.requestFocus();
+      }
+    });
+  }
+
+  @override
   void dispose() {
-    for (var controller in _controllers) {
-      controller.dispose();
-    }
-    for (var node in _focusNodes) {
-      node.dispose();
-    }
+    _controller.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
-  void _onChanged(String value, int index) {
-    if (value.isNotEmpty) {
-      if (index < 5) {
-        _focusNodes[index + 1].requestFocus();
-      } else {
-        _focusNodes[index].unfocus();
-        _verifyCode();
-      }
-    } else if (value.isEmpty && index > 0) {
-      _focusNodes[index - 1].requestFocus();
+  void _onChanged(String value) {
+    if (value.length == 6) {
+      _verifyCode(value);
+    }
+    if (_isError) {
+      setState(() => _isError = false);
     }
   }
 
-  Future<void> _verifyCode() async {
-    final code = _controllers.map((c) => c.text).join();
-    if (code.length < 6) return;
-
+  Future<void> _verifyCode(String code) async {
     setState(() {
       _isLoading = true;
       _isError = false;
@@ -82,11 +80,9 @@ class _PromoCodeDialogState extends State<PromoCodeDialog> {
         setState(() {
           _isLoading = false;
           _isError = true;
+          _controller.clear();
         });
-        for (var controller in _controllers) {
-          controller.clear();
-        }
-        _focusNodes[0].requestFocus();
+        _focusNode.requestFocus();
       }
     }
   }
@@ -96,181 +92,20 @@ class _PromoCodeDialogState extends State<PromoCodeDialog> {
     return Dialog(
       backgroundColor: Colors.transparent,
       elevation: 0,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16),
       child: GlassCard(
         blur: 20,
         opacity: 0.1,
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         borderRadius: BorderRadius.circular(28),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (_successInfluencer != null) ...[
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.check_circle_outline_rounded,
-                    color: Colors.green,
-                    size: 60,
-                  ),
-                ).animate().scale().fadeIn(),
-                const SizedBox(height: 20),
-                Text(
-                  'Code Validé !',
-                  style: AppTextStyles.headlineSmall.copyWith(
-                    color: Colors.green,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Merci d\'utiliser le code de $_successInfluencer',
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
+                _buildSuccessState()
               ] else ...[
-                SizedBox(
-                      height: 65,
-                      width: 115,
-                      child: Stack(
-                        children: [
-                          Positioned(
-                            left: 0,
-                            child: _buildInfluencerAvatar(
-                              'Muriel Blanche',
-                              'assets/images/muriel_blanche.jpg',
-                            ),
-                          ),
-                          Positioned(
-                            left: 50,
-                            child: _buildInfluencerAvatar(
-                              'Betty Christy',
-                              'assets/images/betty_christy.jpg',
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                    .animate()
-                    .fadeIn(duration: 600.ms)
-                    .slideY(begin: -0.2, end: 0),
-                const SizedBox(height: 16),
-                Text(
-                  'Nos Ambassadrices',
-                  style: AppTextStyles.caption.copyWith(
-                    color: AppColors.primary,
-                    letterSpacing: 1.5,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Code d\'accès',
-                  style: AppTextStyles.headlineSmall.copyWith(
-                    color: AppColors.textPrimary,
-                    fontFamily: 'Didot',
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Entrez le code promo de votre influenceuse préférée.',
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 32),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: List.generate(6, (index) {
-                    return Flexible(
-                      child:
-                          Padding(
-                                padding: EdgeInsets.only(
-                                  right: index == 5 ? 0 : 4,
-                                ),
-                                child: SizedBox(
-                                  height: 50,
-                                  child: TextField(
-                                    controller: _controllers[index],
-                                    focusNode: _focusNodes[index],
-                                    onChanged: (value) =>
-                                        _onChanged(value, index),
-                                    keyboardType: TextInputType.number,
-                                    textAlign: TextAlign.center,
-                                    style: AppTextStyles.titleLarge.copyWith(
-                                      color: _isError
-                                          ? AppColors.error
-                                          : AppColors.primary,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    inputFormatters: [
-                                      LengthLimitingTextInputFormatter(1),
-                                      FilteringTextInputFormatter.digitsOnly,
-                                    ],
-                                    decoration: InputDecoration(
-                                      filled: true,
-                                      fillColor: AppColors.surfaceVariant
-                                          .withValues(alpha: 0.5),
-                                      contentPadding: EdgeInsets.zero,
-                                      enabledBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(
-                                          color: _isError
-                                              ? AppColors.error.withValues(
-                                                  alpha: 0.5,
-                                                )
-                                              : AppColors.border,
-                                        ),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: const BorderSide(
-                                          color: AppColors.primary,
-                                          width: 2,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              )
-                              .animate(target: _isError ? 1 : 0)
-                              .shake(duration: 400.ms, hz: 10),
-                    );
-                  }),
-                ),
-                if (_isError) ...[
-                  const SizedBox(height: 16),
-                  Text(
-                    'Code incorrect. Veuillez réessayer.',
-                    style: AppTextStyles.caption.copyWith(
-                      color: AppColors.error,
-                    ),
-                  ).animate().fadeIn(),
-                ],
-                const SizedBox(height: 32),
-                GradientButton(
-                  text: _isLoading ? 'Vérification...' : 'Débloquer',
-                  isLoading: _isLoading,
-                  onPressed: _verifyCode,
-                  width: double.infinity,
-                ),
-                const SizedBox(height: 12),
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(
-                    'Annuler',
-                    style: AppTextStyles.labelLarge.copyWith(
-                      color: AppColors.textTertiary,
-                    ),
-                  ),
-                ),
+                _buildInputState()
               ],
             ],
           ),
@@ -279,31 +114,209 @@ class _PromoCodeDialogState extends State<PromoCodeDialog> {
     );
   }
 
-  Widget _buildInfluencerAvatar(String name, String assetPath) {
-    return Tooltip(
-      message: name,
-      child: Container(
-        width: 65,
-        height: 65,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: AppColors.primary, width: 2),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.3),
-              blurRadius: 10,
-              spreadRadius: 2,
+  Widget _buildSuccessState() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.green.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.check_circle_outline_rounded,
+            color: Colors.green,
+            size: 60,
+          ),
+        ).animate().scale().fadeIn(),
+        const SizedBox(height: 20),
+        Text(
+          'Code Validé !',
+          style: AppTextStyles.headlineSmall.copyWith(
+            color: Colors.green,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Merci d\'utiliser le code de $_successInfluencer',
+          textAlign: TextAlign.center,
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInputState() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Ambassadrices avatars
+        SizedBox(
+          height: 65,
+          width: 115,
+          child: Stack(
+            children: [
+              Positioned(
+                left: 0,
+                child: _buildInfluencerAvatar(
+                  'Muriel Blanche',
+                  'assets/images/muriel_blanche.jpg',
+                ),
+              ),
+              Positioned(
+                left: 50,
+                child: _buildInfluencerAvatar(
+                  'Betty Christy',
+                  'assets/images/betty_christy.jpg',
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'Nos Ambassadrices',
+          style: AppTextStyles.caption.copyWith(
+            color: AppColors.primary,
+            letterSpacing: 1.5,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Code d\'accès',
+          style: AppTextStyles.headlineSmall.copyWith(
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Entrez le code promo de votre influenceuse préférée.',
+          textAlign: TextAlign.center,
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 32),
+        
+        // Input Area
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            // 1. Decorative squares (now slightly narrower for responsiveness)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: List.generate(6, (index) {
+                final char = _controller.text.length > index ? _controller.text[index] : '';
+                final isFocused = _controller.text.length == index && _focusNode.hasFocus;
+                
+                return Container(
+                  width: 35, // Reduced from 40 to fit smaller screens
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceVariant.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: _isError 
+                          ? AppColors.error 
+                          : (isFocused ? AppColors.primary : AppColors.border),
+                      width: isFocused || _isError ? 2 : 1,
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      char,
+                      style: AppTextStyles.titleLarge.copyWith(
+                        color: _isError ? AppColors.error : AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ),
+            
+            // 2. Translucent hit-testable overlay
+            // Positioned.fill to allow clicks everywhere on the Row
+            // Using a low opacity to ensure it's still hit-testable but invisible
+            Positioned.fill(
+              child: Opacity(
+                opacity: 0.0,
+                child: TextField(
+                  controller: _controller,
+                  focusNode: _focusNode,
+                  onChanged: _onChanged,
+                  keyboardType: TextInputType.number,
+                  showCursor: false,
+                  enableInteractiveSelection: false,
+                  style: const TextStyle(fontSize: 1),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(6),
+                  ],
+                  decoration: const InputDecoration(
+                    filled: false,
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              ),
             ),
           ],
         ),
-        child: ClipOval(
-          child: Image.asset(
-            assetPath,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => Container(
-              color: AppColors.surfaceVariant,
-              child: const Icon(Icons.person, color: Colors.white),
+        
+        if (_isError) ...[
+          const SizedBox(height: 16),
+          Text(
+            'Code incorrect. Veuillez réessayer.',
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.error,
             ),
+          ),
+        ],
+        
+        const SizedBox(height: 32),
+        GradientButton(
+          text: _isLoading ? 'Vérification...' : 'Débloquer',
+          isLoading: _isLoading,
+          onPressed: _controller.text.length == 6 ? () => _verifyCode(_controller.text) : null,
+          width: double.infinity,
+        ),
+        const SizedBox(height: 12),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(
+            'Annuler',
+            style: AppTextStyles.labelLarge.copyWith(
+              color: AppColors.textTertiary,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfluencerAvatar(String name, String assetPath) {
+    return Container(
+      width: 65,
+      height: 65,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: AppColors.primary, width: 2),
+      ),
+      child: ClipOval(
+        child: Image.asset(
+          assetPath,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => Container(
+            color: AppColors.surfaceVariant,
+            child: const Icon(Icons.person, color: Colors.white),
           ),
         ),
       ),
