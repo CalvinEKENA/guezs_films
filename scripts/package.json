@@ -1,0 +1,12 @@
+{
+  "name": "guezs-films-seed",
+  "version": "1.0.0",
+  "description": "Script de seed Firebase Storage + Firestore pour Guezs Films",
+  "main": "seed_content.js",
+  "scripts": {
+    "seed": "node seed_content.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  }
+}

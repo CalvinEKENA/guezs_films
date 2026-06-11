@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/responsive/responsive_layout.dart';
+import '../../../../core/responsive/responsive_values.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/cached_image.dart';
@@ -24,77 +26,99 @@ class DownloadsPage extends ConsumerWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: downloadsAsync.when(
-        data: (downloads) {
-          if (downloads.isEmpty) {
-            return _buildEmptyState(context);
-          }
-          return _buildDownloadsList(context, ref, downloads);
-        },
-        loading: () => ListView.separated(
-          padding: const EdgeInsets.all(16.0),
-          itemCount: 5,
-          separatorBuilder: (context, index) => const SizedBox(height: 16),
-          itemBuilder: (context, index) => const ShimmerLoading(
-            width: double.infinity,
-            height: 120,
-            borderRadius: BorderRadius.all(Radius.circular(16)),
+      body: ResponsiveLayout(
+        builder: (context, responsive) => downloadsAsync.when(
+          data: (downloads) {
+            if (downloads.isEmpty) {
+              return _buildEmptyState(context, responsive);
+            }
+            return _buildDownloadsList(context, ref, downloads, responsive);
+          },
+          loading: () => ListView.separated(
+            padding: EdgeInsets.all(responsive.pagePadding),
+            itemCount: 5,
+            separatorBuilder: (context, index) => const SizedBox(height: 16),
+            itemBuilder: (context, index) => Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: responsive.maxContentWidth,
+                ),
+                child: const ShimmerLoading(
+                  width: double.infinity,
+                  height: 120,
+                  borderRadius: BorderRadius.all(Radius.circular(16)),
+                ),
+              ),
+            ),
           ),
-        ),
-        error: (err, stack) => Center(
-          child: Text(
-            'Erreur: $err',
-            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error),
+          error: (err, stack) => Center(
+            child: Padding(
+              padding: EdgeInsets.all(responsive.pagePadding),
+              child: Text(
+                'Erreur: $err',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.error,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
+  Widget _buildEmptyState(BuildContext context, ResponsiveValues responsive) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.download_for_offline,
-            size: 80,
-            color: AppColors.textTertiary.withValues(alpha: 0.5),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Aucun téléchargement',
-            style: AppTextStyles.titleMedium.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 40),
-            child: Text(
-              'Vos films et séries téléchargés pour un visionnage hors-ligne apparaîtront ici.',
-              textAlign: TextAlign.center,
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textTertiary,
+      child: Padding(
+        padding: EdgeInsets.all(responsive.pagePadding),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.download_for_offline,
+                size: 80,
+                color: AppColors.textTertiary.withValues(alpha: 0.5),
               ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: () => context.go(Routes.home),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+              const SizedBox(height: 16),
+              Text(
+                'Aucun téléchargement',
+                style: AppTextStyles.titleMedium.copyWith(
+                  color: AppColors.textSecondary,
+                ),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            ),
-            child: const Text(
-              'Explorer le catalogue',
-              style: TextStyle(color: Colors.white),
-            ),
+              const SizedBox(height: 8),
+              Text(
+                'Vos films et séries téléchargés pour un visionnage hors-ligne apparaîtront ici.',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textTertiary,
+                ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () => context.go(Routes.home),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.accent,
+                  foregroundColor: AppColors.textOnGold,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                ),
+                child: const Text(
+                  'Explorer le catalogue',
+                  style: TextStyle(color: AppColors.textOnGold),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -103,13 +127,20 @@ class DownloadsPage extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     List<DownloadItem> downloads,
+    ResponsiveValues responsive,
   ) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
+    return ListView.separated(
+      padding: EdgeInsets.all(responsive.pagePadding),
       itemCount: downloads.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 16),
       itemBuilder: (context, index) {
         final item = downloads[index];
-        return _buildDownloadCard(context, ref, item);
+        return Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: responsive.maxContentWidth),
+            child: _buildDownloadCard(context, ref, item),
+          ),
+        );
       },
     );
   }
@@ -136,8 +167,8 @@ class DownloadsPage extends ConsumerWidget {
       subtitle = 'En attente...';
     }
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+    return MouseRegion(
+      cursor: isCompleted ? SystemMouseCursors.click : MouseCursor.defer,
       child: GlassCard(
         blur: 10,
         opacity: 0.05,

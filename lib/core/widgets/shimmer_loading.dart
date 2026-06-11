@@ -62,6 +62,10 @@ class ShimmerLoading extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.shimmerBase,
           borderRadius: borderRadius ?? BorderRadius.circular(8),
+          border: Border.all(
+            color: AppColors.border.withValues(alpha: 0.34),
+            width: 0.6,
+          ),
         ),
       ),
     );
@@ -86,22 +90,22 @@ class ShimmerContentRow extends StatelessWidget {
     return SizedBox(
       height: itemWidth * 1.5 + 44,
       child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            physics: const NeverScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: itemCount,
-            separatorBuilder: (context, index) => SizedBox(width: spacing),
-            itemBuilder: (context, index) => Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ShimmerLoading.poster(width: itemWidth),
-                const SizedBox(height: 8),
-                ShimmerLoading.text(width: itemWidth * 0.8),
-                const SizedBox(height: 4),
-                ShimmerLoading.text(width: itemWidth * 0.5, height: 12),
-              ],
-            ),
-          ),
+        scrollDirection: Axis.horizontal,
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: itemCount,
+        separatorBuilder: (context, index) => SizedBox(width: spacing),
+        itemBuilder: (context, index) => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ShimmerLoading.poster(width: itemWidth),
+            const SizedBox(height: 8),
+            ShimmerLoading.text(width: itemWidth * 0.8),
+            const SizedBox(height: 4),
+            ShimmerLoading.text(width: itemWidth * 0.5, height: 12),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -111,12 +115,14 @@ class ShimmerGrid extends StatelessWidget {
   final int itemCount;
   final int crossAxisCount;
   final double spacing;
+  final EdgeInsets padding;
 
   const ShimmerGrid({
     super.key,
     this.itemCount = 6,
     this.crossAxisCount = 2,
     this.spacing = 12,
+    this.padding = const EdgeInsets.all(16),
   });
 
   @override
@@ -124,7 +130,7 @@ class ShimmerGrid extends StatelessWidget {
     return GridView.builder(
       physics: const NeverScrollableScrollPhysics(),
       shrinkWrap: true,
-      padding: const EdgeInsets.all(16),
+      padding: padding,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount,
         childAspectRatio: 2 / 3,
@@ -152,7 +158,7 @@ class HeroShimmer extends StatelessWidget {
     return Container(
       height: screenHeight * 0.65,
       padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(color: AppColors.background),
+      decoration: const BoxDecoration(gradient: AppColors.bgGradient),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         crossAxisAlignment: CrossAxisAlignment.start,

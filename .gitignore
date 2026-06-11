@@ -66,3 +66,7 @@ analysis_results_utf8.txt
 filelist.txt
 node_modules/
 **/node_modules/
+
+# Local build archives and settings
+build.zip
+.claude/

@@ -19,6 +19,7 @@ import 'package:guezs_films/features/player/presentation/pages/watch_film_page.d
 import 'package:guezs_films/features/series/presentation/pages/series_details_page.dart';
 import 'package:guezs_films/core/widgets/main_scaffold.dart';
 import 'package:guezs_films/core/routes/route_constants.dart';
+import 'package:guezs_films/core/theme/app_colors.dart';
 import 'package:guezs_films/features/profile/presentation/pages/profile_selector_page.dart';
 
 /// App Router Configuration
@@ -282,7 +283,7 @@ class AppRouter {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, size: 64, color: Colors.red),
+              const Icon(Icons.error_outline, size: 64, color: AppColors.error),
               const SizedBox(height: 16),
               Text(
                 'Page not found',

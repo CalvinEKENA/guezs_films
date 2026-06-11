@@ -40,57 +40,61 @@ class WatchStateView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (showProgress)
-                    const CircularProgressIndicator(color: AppColors.primary)
-                  else
-                    Icon(icon, color: AppColors.textTertiary, size: 56),
-                  const SizedBox(height: 18),
-                  Text(
-                    title,
-                    textAlign: TextAlign.center,
-                    style: AppTextStyles.titleMedium.copyWith(
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    message,
-                    textAlign: TextAlign.center,
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  if (primaryLabel != null && onPrimaryPressed != null) ...[
-                    const SizedBox(height: 24),
-                    GradientButton(
-                      text: primaryLabel!,
-                      icon: Icons.arrow_back_rounded,
-                      onPressed: onPrimaryPressed!,
-                    ),
-                  ],
-                  if (secondaryLabel != null && onSecondaryPressed != null) ...[
-                    const SizedBox(height: 12),
-                    TextButton(
-                      onPressed: onSecondaryPressed!,
-                      child: Text(
-                        secondaryLabel!,
-                        style: AppTextStyles.labelMedium.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
+      backgroundColor: AppColors.background,
+      body: Container(
+        decoration: const BoxDecoration(gradient: AppColors.bgGradient),
+        child: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (showProgress)
+                      const CircularProgressIndicator(color: AppColors.accent)
+                    else
+                      Icon(icon, color: AppColors.brandGoldLight, size: 56),
+                    const SizedBox(height: 18),
+                    Text(
+                      title,
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.titleMedium.copyWith(
+                        color: AppColors.textPrimary,
                       ),
                     ),
+                    const SizedBox(height: 8),
+                    Text(
+                      message,
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    if (primaryLabel != null && onPrimaryPressed != null) ...[
+                      const SizedBox(height: 24),
+                      GradientButton(
+                        text: primaryLabel!,
+                        icon: Icons.arrow_back_rounded,
+                        onPressed: onPrimaryPressed!,
+                      ),
+                    ],
+                    if (secondaryLabel != null &&
+                        onSecondaryPressed != null) ...[
+                      const SizedBox(height: 12),
+                      TextButton(
+                        onPressed: onSecondaryPressed!,
+                        child: Text(
+                          secondaryLabel!,
+                          style: AppTextStyles.labelMedium.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),

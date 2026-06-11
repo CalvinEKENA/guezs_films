@@ -118,7 +118,7 @@ class _PromoCodeDialogState extends ConsumerState<PromoCodeDialog> {
                 _isGranted
                     ? Icons.check_circle_outline_rounded
                     : Icons.lock_open_rounded,
-                color: _isGranted ? AppColors.success : AppColors.primary,
+                color: _isGranted ? AppColors.success : AppColors.accent,
                 size: 52,
               ),
               const SizedBox(height: 16),
@@ -159,7 +159,10 @@ class _PromoCodeDialogState extends ConsumerState<PromoCodeDialog> {
                 decoration: InputDecoration(
                   labelText: 'Code',
                   hintText: 'VOTRE-CODE',
-                  prefixIcon: const Icon(Icons.confirmation_number_outlined),
+                  prefixIcon: const Icon(
+                    Icons.confirmation_number_outlined,
+                    color: AppColors.brandGoldLight,
+                  ),
                   errorText: _message != null && !_isGranted ? _message : null,
                 ),
               ),

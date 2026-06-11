@@ -12,7 +12,7 @@ import 'core/constants/app_constants.dart';
 import 'core/theme/app_theme.dart';
 
 /// Guezs Films - Premium Streaming Application
-/// A Netflix-like streaming app with exceptional design and features
+/// Premium streaming app with cinematic mobile and web experiences.
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 

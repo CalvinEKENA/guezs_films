@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Represents a user profile (Netflix-style multi-profile support)
+/// Represents a user profile with multi-profile streaming support.
 class UserProfileEntity {
   final String id;
   final String name;
@@ -30,8 +30,8 @@ class UserProfileEntity {
 
   /// Predefined color palette for profile avatars
   static const List<Color> colorOptions = [
-    Color(0xFFE50914), // Rouge (primary)
-    Color(0xFFFFD700), // Or (accent)
+    Color(0xFF003366), // Bleu imperial
+    Color(0xFFD4AF37), // Or metallique
     Color(0xFF7C4DFF), // Violet
     Color(0xFF2196F3), // Bleu
     Color(0xFF46D369), // Vert
@@ -40,8 +40,7 @@ class UserProfileEntity {
     Color(0xFF00BCD4), // Turquoise
   ];
 
-  Color get color =>
-      colorOptions[colorIndex.clamp(0, colorOptions.length - 1)];
+  Color get color => colorOptions[colorIndex.clamp(0, colorOptions.length - 1)];
 
   UserProfileEntity copyWith({
     String? id,

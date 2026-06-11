@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 
@@ -63,6 +64,7 @@ class _GradientButtonState extends State<GradientButton>
   void _onTapUp(TapUpDetails details) {
     _controller.reverse();
     if (widget.onPressed != null && !widget.isLoading) {
+      HapticFeedback.selectionClick();
       widget.onPressed!();
     }
   }
@@ -74,6 +76,9 @@ class _GradientButtonState extends State<GradientButton>
   @override
   Widget build(BuildContext context) {
     final isEnabled = widget.onPressed != null && !widget.isLoading;
+    final foregroundColor = widget.gradientColors == null
+        ? AppColors.textOnGold
+        : AppColors.textPrimary;
 
     return GestureDetector(
       onTapDown: _onTapDown,
@@ -90,49 +95,58 @@ class _GradientButtonState extends State<GradientButton>
             width: widget.width,
             height: widget.height,
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors:
-                    widget.gradientColors ??
-                    [AppColors.primary, AppColors.primaryDark],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              gradient: widget.gradientColors == null
+                  ? AppColors.goldGradient
+                  : LinearGradient(
+                      colors: widget.gradientColors!,
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
               borderRadius: widget.borderRadius ?? BorderRadius.circular(8),
               boxShadow: isEnabled
                   ? [
                       BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.3),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
+                        color: AppColors.brandGold.withValues(alpha: 0.26),
+                        blurRadius: 18,
+                        offset: const Offset(0, 6),
                       ),
                     ]
                   : null,
             ),
             child: Center(
               child: widget.isLoading
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 24,
                       height: 24,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.5,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          foregroundColor,
+                        ),
                       ),
                     )
-                  : Row(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        if (widget.icon != null) ...[
-                          Icon(widget.icon, color: Colors.white, size: 20),
-                          const SizedBox(width: 8),
-                        ],
-                        Text(
-                          widget.text,
-                          style: AppTextStyles.button.copyWith(
-                            color: Colors.white,
+                  : Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (widget.icon != null) ...[
+                            Icon(widget.icon, color: foregroundColor, size: 20),
+                            const SizedBox(width: 8),
+                          ],
+                          Flexible(
+                            child: Text(
+                              widget.text,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTextStyles.button.copyWith(
+                                color: foregroundColor,
+                              ),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
             ),
           ),
@@ -162,31 +176,47 @@ class OutlinedGradientButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        width: width,
-        height: height,
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.textPrimary, width: 1.5),
-        ),
-        child: Center(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (icon != null) ...[
-                Icon(icon, color: AppColors.textPrimary, size: 20),
-                const SizedBox(width: 8),
-              ],
-              Text(
-                text,
-                style: AppTextStyles.button.copyWith(
-                  color: AppColors.textPrimary,
-                ),
+      onTap: onPressed == null
+          ? null
+          : () {
+              HapticFeedback.selectionClick();
+              onPressed!();
+            },
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 180),
+        opacity: onPressed == null ? 0.55 : 1,
+        child: Container(
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            color: AppColors.glassBackground(0.24),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: AppColors.glassBorder(0.36), width: 0.8),
+          ),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (icon != null) ...[
+                    Icon(icon, color: AppColors.textPrimary, size: 20),
+                    const SizedBox(width: 8),
+                  ],
+                  Flexible(
+                    child: Text(
+                      text,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.button.copyWith(
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

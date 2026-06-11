@@ -11,6 +11,13 @@ class EpisodeEntity extends Equatable {
   final String videoUrl;
   final int durationSec;
   final DateTime airDate;
+  final String maturityRating;
+  final List<String> subtitles;
+  final String qualityVideo;
+  final bool requiresAccess;
+  final bool isLocked;
+  final String accessMode;
+  final String accessLabel;
 
   const EpisodeEntity({
     required this.id,
@@ -23,6 +30,13 @@ class EpisodeEntity extends Equatable {
     required this.videoUrl,
     required this.durationSec,
     required this.airDate,
+    this.maturityRating = '',
+    this.subtitles = const [],
+    this.qualityVideo = '',
+    this.requiresAccess = false,
+    this.isLocked = false,
+    this.accessMode = '',
+    this.accessLabel = '',
   });
 
   @override
@@ -37,5 +51,12 @@ class EpisodeEntity extends Equatable {
     videoUrl,
     durationSec,
     airDate,
+    maturityRating,
+    subtitles,
+    qualityVideo,
+    requiresAccess,
+    isLocked,
+    accessMode,
+    accessLabel,
   ];
 }

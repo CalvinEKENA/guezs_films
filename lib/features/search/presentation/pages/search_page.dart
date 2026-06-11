@@ -10,6 +10,8 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/domain/entities/film_entity.dart';
 import '../../../../core/domain/entities/series_entity.dart';
 import '../../../../core/providers/content_providers.dart';
+import '../../../../core/responsive/responsive_layout.dart';
+import '../../../../core/responsive/responsive_values.dart';
 import '../../../../core/routes/route_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -36,7 +38,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   String _selectedFilter = 'Tous';
 
   static const List<String> _filters = ['Tous', 'Films', 'Séries'];
-  
+
   static const List<String> _genres = [
     'Action',
     'Comédie',
@@ -194,31 +196,39 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildSearchBar(),
-            _buildFilters(),
-            _buildGenreChips(),
-            Expanded(
-              child: (_searchQuery.isEmpty && _selectedGenre == null)
-                  ? _buildEmptyState()
-                  : _buildResults(),
-            ),
-          ],
+        child: ResponsiveLayout(
+          builder: (context, responsive) => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSearchBar(responsive),
+              _buildFilters(responsive),
+              _buildGenreChips(responsive),
+              Expanded(
+                child: (_searchQuery.isEmpty && _selectedGenre == null)
+                    ? _buildEmptyState(responsive)
+                    : _buildResults(responsive),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildSearchBar() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
+  Widget _buildSearchBar(ResponsiveValues responsive) {
+    return ResponsivePage(
+      padding: EdgeInsets.fromLTRB(
+        responsive.pagePadding,
+        16,
+        responsive.pagePadding,
+        10,
+      ),
       child: Container(
         height: 52,
         decoration: BoxDecoration(
           color: AppColors.surfaceVariant,
           borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
         ),
         child: Row(
           children: [
@@ -256,12 +266,12 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     );
   }
 
-  Widget _buildFilters() {
+  Widget _buildFilters(ResponsiveValues responsive) {
     return SizedBox(
       height: 40,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: EdgeInsets.symmetric(horizontal: responsive.pagePadding),
         itemCount: _filters.length,
         separatorBuilder: (context, index) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
@@ -283,7 +293,9 @@ class _SearchPageState extends ConsumerState<SearchPage> {
               child: Text(
                 filter,
                 style: AppTextStyles.labelMedium.copyWith(
-                  color: isSelected ? Colors.white : AppColors.textSecondary,
+                  color: isSelected
+                      ? AppColors.textOnBlue
+                      : AppColors.textSecondary,
                 ),
               ),
             ),
@@ -293,14 +305,14 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     );
   }
 
-  Widget _buildGenreChips() {
+  Widget _buildGenreChips(ResponsiveValues responsive) {
     return Padding(
       padding: const EdgeInsets.only(top: 12, bottom: 8),
       child: SizedBox(
         height: 36,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: EdgeInsets.symmetric(horizontal: responsive.pagePadding),
           itemCount: _genres.length,
           separatorBuilder: (context, index) => const SizedBox(width: 8),
           itemBuilder: (context, index) {
@@ -311,9 +323,14 @@ class _SearchPageState extends ConsumerState<SearchPage> {
               onTap: () => _toggleGenre(genre),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
-                  color: isSelected ? AppColors.accent.withValues(alpha: 0.2) : AppColors.surfaceVariant,
+                  color: isSelected
+                      ? AppColors.accent.withValues(alpha: 0.2)
+                      : AppColors.surfaceVariant,
                   border: Border.all(
                     color: isSelected ? AppColors.accent : Colors.transparent,
                   ),
@@ -324,13 +341,19 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                     Text(
                       genre,
                       style: AppTextStyles.labelMedium.copyWith(
-                        color: isSelected ? AppColors.accent : AppColors.textSecondary,
+                        color: isSelected
+                            ? AppColors.accent
+                            : AppColors.textSecondary,
                       ),
                     ),
                     if (isSelected) ...[
                       const SizedBox(width: 4),
-                      const Icon(Icons.close, size: 14, color: AppColors.accent),
-                    ]
+                      const Icon(
+                        Icons.close,
+                        size: 14,
+                        color: AppColors.accent,
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -341,9 +364,9 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(ResponsiveValues responsive) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(responsive.pagePadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -371,75 +394,126 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             ),
             const SizedBox(height: 32),
           ],
-          
+
           Center(
-            child: Column(
-              children: [
-                const SizedBox(height: 48),
-                Icon(Icons.search, size: 64, color: AppColors.textTertiary.withValues(alpha: 0.5)),
-                const SizedBox(height: 16),
-                Text(
-                  'Découvrez de nouveaux films',
-                  style: AppTextStyles.titleMedium.copyWith(color: AppColors.textSecondary),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Cherchez par titre ou explorez nos genres ci-dessus.',
-                  style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textTertiary),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 520),
+              child: Column(
+                children: [
+                  const SizedBox(height: 48),
+                  Icon(
+                    Icons.search,
+                    size: 64,
+                    color: AppColors.textTertiary.withValues(alpha: 0.5),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Découvrez de nouveaux films',
+                    style: AppTextStyles.titleMedium.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Cherchez par titre ou explorez nos genres ci-dessus.',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textTertiary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
             ),
-          )
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildResults() {
+  Widget _buildResults(ResponsiveValues responsive) {
     final query = _selectedGenre ?? _searchQuery;
     final isGenreSearch = _selectedGenre != null;
 
-    final filmsAsync = isGenreSearch 
+    final filmsAsync = isGenreSearch
         ? ref.watch(filmsByGenreProvider(query))
         : ref.watch(searchFilmsProvider(query));
-        
+
     final seriesAsync = isGenreSearch
         ? ref.watch(seriesByGenreProvider(query))
         : ref.watch(searchSeriesProvider(query));
 
     if (_selectedFilter == 'Films') {
-      return _buildFilmResults(filmsAsync);
+      return _buildFilmResults(filmsAsync, responsive);
     }
     if (_selectedFilter == 'Séries') {
-      return _buildSeriesResults(seriesAsync);
+      return _buildSeriesResults(seriesAsync, responsive);
     }
 
-    return _buildAllResults(filmsAsync: filmsAsync, seriesAsync: seriesAsync);
+    return _buildAllResults(
+      filmsAsync: filmsAsync,
+      seriesAsync: seriesAsync,
+      responsive: responsive,
+    );
   }
 
-  Widget _buildFilmResults(AsyncValue<List<FilmEntity>> filmsAsync) {
+  Widget _buildFilmResults(
+    AsyncValue<List<FilmEntity>> filmsAsync,
+    ResponsiveValues responsive,
+  ) {
     return filmsAsync.when(
       data: (films) {
         if (films.isEmpty) return _buildNoResultsState();
         return _buildResultsGrid(
-          films.map((f) => _CombinedSearchResult(id: f.id, title: f.title, posterUrl: f.posterUrl, type: 'Film')).toList()
+          films
+              .map(
+                (f) => _CombinedSearchResult(
+                  id: f.id,
+                  title: f.title,
+                  posterUrl: f.posterUrl,
+                  type: 'Film',
+                ),
+              )
+              .toList(),
+          responsive,
         );
       },
-      loading: () => const ShimmerGrid(itemCount: 9),
+      loading: () => ShimmerGrid(
+        itemCount: responsive.posterColumns * 3,
+        crossAxisCount: responsive.posterColumns,
+        spacing: responsive.gridGap,
+        padding: EdgeInsets.all(responsive.pagePadding),
+      ),
       error: (error, stackTrace) => _buildErrorState(),
     );
   }
 
-  Widget _buildSeriesResults(AsyncValue<List<SeriesEntity>> seriesAsync) {
+  Widget _buildSeriesResults(
+    AsyncValue<List<SeriesEntity>> seriesAsync,
+    ResponsiveValues responsive,
+  ) {
     return seriesAsync.when(
       data: (seriesList) {
         if (seriesList.isEmpty) return _buildNoResultsState();
         return _buildResultsGrid(
-          seriesList.map((s) => _CombinedSearchResult(id: s.id, title: s.title, posterUrl: s.posterUrl, type: 'Série')).toList()
+          seriesList
+              .map(
+                (s) => _CombinedSearchResult(
+                  id: s.id,
+                  title: s.title,
+                  posterUrl: s.posterUrl,
+                  type: 'Série',
+                ),
+              )
+              .toList(),
+          responsive,
         );
       },
-      loading: () => const ShimmerGrid(itemCount: 9),
+      loading: () => ShimmerGrid(
+        itemCount: responsive.posterColumns * 3,
+        crossAxisCount: responsive.posterColumns,
+        spacing: responsive.gridGap,
+        padding: EdgeInsets.all(responsive.pagePadding),
+      ),
       error: (error, stackTrace) => _buildErrorState(),
     );
   }
@@ -447,9 +521,15 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   Widget _buildAllResults({
     required AsyncValue<List<FilmEntity>> filmsAsync,
     required AsyncValue<List<SeriesEntity>> seriesAsync,
+    required ResponsiveValues responsive,
   }) {
     if (filmsAsync.isLoading || seriesAsync.isLoading) {
-      return const ShimmerGrid(itemCount: 9);
+      return ShimmerGrid(
+        itemCount: responsive.posterColumns * 3,
+        crossAxisCount: responsive.posterColumns,
+        spacing: responsive.gridGap,
+        padding: EdgeInsets.all(responsive.pagePadding),
+      );
     }
     if (filmsAsync.hasError || seriesAsync.hasError) {
       return _buildErrorState();
@@ -457,26 +537,39 @@ class _SearchPageState extends ConsumerState<SearchPage> {
 
     final combined = [
       ...(filmsAsync.valueOrNull ?? const <FilmEntity>[]).map(
-        (film) => _CombinedSearchResult(id: film.id, title: film.title, posterUrl: film.posterUrl, type: 'Film'),
+        (film) => _CombinedSearchResult(
+          id: film.id,
+          title: film.title,
+          posterUrl: film.posterUrl,
+          type: 'Film',
+        ),
       ),
       ...(seriesAsync.valueOrNull ?? const <SeriesEntity>[]).map(
-        (series) => _CombinedSearchResult(id: series.id, title: series.title, posterUrl: series.posterUrl, type: 'Série'),
+        (series) => _CombinedSearchResult(
+          id: series.id,
+          title: series.title,
+          posterUrl: series.posterUrl,
+          type: 'Série',
+        ),
       ),
     ];
 
     if (combined.isEmpty) return _buildNoResultsState();
 
-    return _buildResultsGrid(combined);
+    return _buildResultsGrid(combined, responsive);
   }
 
-  Widget _buildResultsGrid(List<_CombinedSearchResult> items) {
+  Widget _buildResultsGrid(
+    List<_CombinedSearchResult> items,
+    ResponsiveValues responsive,
+  ) {
     return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
+      padding: EdgeInsets.all(responsive.pagePadding),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: responsive.posterColumns,
         childAspectRatio: 0.58,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
+        crossAxisSpacing: responsive.gridGap,
+        mainAxisSpacing: responsive.gridGap,
       ),
       itemCount: items.length,
       itemBuilder: (context, index) {
@@ -583,88 +676,100 @@ class _SearchContentCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isFavorite = ref.watch(
-      isFavoriteProvider((id: id, contentType: badge == 'Film' ? 'film' : 'series')),
+      isFavoriteProvider((
+        id: id,
+        contentType: badge == 'Film' ? 'film' : 'series',
+      )),
     );
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: CachedImage(
-                    imageUrl: posterUrl,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                // Badge
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.background.withValues(alpha: 0.82),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      badge,
-                      style: AppTextStyles.caption.copyWith(
-                        color: badge == 'Film' ? AppColors.accent : AppColors.primary,
-                        fontWeight: FontWeight.w700,
-                      ),
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: CachedImage(
+                      imageUrl: posterUrl,
+                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                ),
-                // Favorite Button
-                Positioned(
-                  top: 4,
-                  right: 4,
-                  child: GestureDetector(
-                    onTap: () {
-                      ref.read(favoritesProvider.notifier).toggleFavorite(
-                        FavoriteMovie(
-                          id: id,
-                          title: title,
-                          posterPath: posterUrl,
-                          contentType: badge == 'Film' ? 'film' : 'series',
-                          addedAt: DateTime.now().toIso8601String(),
-                        ),
-                      );
-                    },
+                  // Badge
+                  Positioned(
+                    top: 8,
+                    left: 8,
                     child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.5),
-                        shape: BoxShape.circle,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
                       ),
-                      child: Icon(
-                        isFavorite ? Icons.check_rounded : Icons.add_rounded,
-                        color: isFavorite ? AppColors.accent : Colors.white,
-                        size: 18,
+                      decoration: BoxDecoration(
+                        color: AppColors.background.withValues(alpha: 0.82),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        badge,
+                        style: AppTextStyles.caption.copyWith(
+                          color: badge == 'Film'
+                              ? AppColors.accent
+                              : AppColors.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                  // Favorite Button
+                  Positioned(
+                    top: 4,
+                    right: 4,
+                    child: GestureDetector(
+                      onTap: () {
+                        ref
+                            .read(favoritesProvider.notifier)
+                            .toggleFavorite(
+                              FavoriteMovie(
+                                id: id,
+                                title: title,
+                                posterPath: posterUrl,
+                                contentType: badge == 'Film'
+                                    ? 'film'
+                                    : 'series',
+                                addedAt: DateTime.now().toIso8601String(),
+                              ),
+                            );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.5),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          isFavorite ? Icons.check_rounded : Icons.add_rounded,
+                          color: isFavorite ? AppColors.accent : Colors.white,
+                          size: 18,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: AppTextStyles.labelMedium.copyWith(
-              color: AppColors.textPrimary,
+            const SizedBox(height: 8),
+            Text(
+              title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.labelMedium.copyWith(
+                color: AppColors.textPrimary,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     ).animate().fadeIn(duration: 240.ms).scale(begin: const Offset(0.96, 0.96));
   }

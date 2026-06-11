@@ -36,18 +36,22 @@ class CachedImage extends StatelessWidget {
     }
 
     String path = imageUrl!;
-    
+
     // Normalization for Web Assets (Handles spaces and specific content like "Elle et Moi")
     final lowPath = path.toLowerCase();
-    
+
     // Priority 1: Check if this is a known "Elle et Moi" content piece
     // If so, and we are not explicitly forced to network, we try to use the local asset
     if (lowPath.contains('elle et moi') || lowPath.contains('elle_et_moi')) {
       // Extract filename
-      final fileName = path.split('/').last.replaceAll('%20', '_').replaceAll(' ', '_');
+      final fileName = path
+          .split('/')
+          .last
+          .replaceAll('%20', '_')
+          .replaceAll(' ', '_');
       // Force local asset path for these specific premium assets
       final assetPath = 'assets/images/$fileName';
-      
+
       return _buildAssetImage(assetPath);
     }
 
@@ -87,7 +91,9 @@ class CachedImage extends StatelessWidget {
         fit: fit,
         alignment: alignment,
         errorBuilder: (context, error, stackTrace) {
-          debugPrint('Asset image not found: $assetPath. Falling back to error widget.');
+          debugPrint(
+            'Asset image not found: $assetPath. Falling back to error widget.',
+          );
           return errorWidget ?? _buildError();
         },
       ),
@@ -98,7 +104,14 @@ class CachedImage extends StatelessWidget {
     return Container(
       width: width,
       height: height,
-      color: backgroundColor ?? AppColors.surfaceVariant,
+      decoration: BoxDecoration(
+        color: backgroundColor ?? AppColors.card,
+        borderRadius: borderRadius ?? BorderRadius.circular(8),
+        border: Border.all(
+          color: AppColors.border.withValues(alpha: 0.55),
+          width: 0.8,
+        ),
+      ),
       child: ShimmerLoading(
         width: width ?? 100,
         height: height ?? 150,
@@ -112,8 +125,12 @@ class CachedImage extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: backgroundColor ?? AppColors.surfaceVariant,
+        color: backgroundColor ?? AppColors.card,
         borderRadius: borderRadius ?? BorderRadius.circular(8),
+        border: Border.all(
+          color: AppColors.border.withValues(alpha: 0.55),
+          width: 0.8,
+        ),
       ),
       child: const Center(
         child: Icon(
@@ -157,9 +174,14 @@ class MoviePoster extends StatelessWidget {
           boxShadow: showShadow
               ? [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
+                    color: Colors.black.withValues(alpha: 0.42),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
+                  ),
+                  BoxShadow(
+                    color: AppColors.spotlightBlue.withValues(alpha: 0.06),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8),
                   ),
                 ]
               : null,

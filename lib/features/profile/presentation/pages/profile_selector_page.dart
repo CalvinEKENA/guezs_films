@@ -12,7 +12,7 @@ import '../../domain/entities/user_profile_entity.dart';
 import '../providers/user_profile_providers.dart';
 import '../widgets/profile_form_sheet.dart';
 
-/// Netflix-style luxurious profile selector shown after login
+/// Cinematic profile selector shown after login.
 class ProfileSelectorPage extends ConsumerWidget {
   const ProfileSelectorPage({super.key});
 
@@ -23,7 +23,7 @@ class ProfileSelectorPage extends ConsumerWidget {
     final profilesAsync = ref.watch(userProfilesProvider(userId));
 
     return Scaffold(
-      backgroundColor: Colors.black, // Dark background as base
+      backgroundColor: AppColors.bgCinema,
       body: profilesAsync.when(
         data: (profiles) => _buildContent(context, ref, userId, profiles),
         loading: () => const Center(
@@ -84,13 +84,13 @@ class ProfileSelectorPage extends ConsumerWidget {
             children: [
               const Spacer(flex: 2),
 
-              // "GUEZS FILMS" / "NETFLIX" Top Red Text
+              // GUEZS FILMS brand mark
               Text(
                     'GUEZS FILMS',
                     style: AppTextStyles.labelLarge.copyWith(
-                      color: AppColors.primary, // Red color like Netflix
+                      color: AppColors.brandGoldLight,
                       fontWeight: FontWeight.w800,
-                      letterSpacing: 2,
+                      letterSpacing: 0,
                     ),
                   )
                   .animate()
@@ -109,7 +109,7 @@ class ProfileSelectorPage extends ConsumerWidget {
                       height: 1.0,
                       fontWeight: FontWeight.w900,
                       color: Colors.white,
-                      letterSpacing: -1,
+                      letterSpacing: 0,
                     ),
                   )
                   .animate()
@@ -207,7 +207,7 @@ class ProfileSelectorPage extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Netflix-style squarcle avatar without borders
+            // Cinematic squarcle avatar without borders
             Container(
               width: 80,
               height: 80,
@@ -283,9 +283,7 @@ class ProfileSelectorPage extends ConsumerWidget {
                   height: 80,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
-                    color: Colors.white.withValues(
-                      alpha: 0.2,
-                    ), // Dark grey like Netflix
+                    color: AppColors.glassBackground(0.24),
                   ),
                   child: const Center(
                     child: Icon(
