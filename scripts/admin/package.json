@@ -1,0 +1,14 @@
+{
+  "name": "guezs-films-access-admin",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Admin scripts for Guezs Films premium access setup",
+  "scripts": {
+    "create:code": "node create_access_code.js",
+    "create:rule": "node create_content_access_rule.js",
+    "seed:demo": "node seed_access_demo.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  }
+}

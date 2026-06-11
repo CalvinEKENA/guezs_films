@@ -188,7 +188,7 @@ Règles par contenu pour définir si un contenu est gratuit, premium, réservé 
 | Champ | Type | Description |
 | --- | --- | --- |
 | `active` | bool | Règle active. |
-| `accessMode` | string | `free`, `code_required`, `premium`, `purchase_required`. |
+| `accessMode` | string | `free`, `codeRequired`, `premium`, `purchaseRequired`. |
 | `contentType` | string | `global`, `film`, `series`, `episode`. |
 | `filmId` | string? | Scope film. |
 | `seriesId` | string? | Scope série/épisode. |
@@ -203,7 +203,7 @@ Règles par contenu pour définir si un contenu est gratuit, premium, réservé 
 ```json
 {
   "active": true,
-  "accessMode": "code_required",
+  "accessMode": "codeRequired",
   "contentType": "film",
   "filmId": "elle-et-moi",
   "updatedAt": "SERVER_TIMESTAMP"
