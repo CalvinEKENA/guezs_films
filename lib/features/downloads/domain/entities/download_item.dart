@@ -51,14 +51,14 @@ class DownloadItem extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        title,
-        posterPath,
-        videoUrl,
-        localPath,
-        progress,
-        status,
-        totalSize,
-        downloadedSize,
-      ];
+    id,
+    title,
+    posterPath,
+    videoUrl,
+    localPath,
+    progress,
+    status,
+    totalSize,
+    downloadedSize,
+  ];
 }

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/content/content_presentation.dart';
 import '../../../../core/domain/entities/film_entity.dart';
 import '../../../../core/domain/entities/series_entity.dart';
 import '../../../../core/providers/content_providers.dart';
@@ -321,8 +322,12 @@ class _HomePageState extends ConsumerState<HomePage> {
       ...newFilms.map(_HomeContentItem.fromFilm),
       ...newSeries.map(_HomeContentItem.fromSeries),
     ]);
-    final filmItems = films.map(_HomeContentItem.fromFilm).toList();
-    final seriesItems = series.map(_HomeContentItem.fromSeries).toList();
+    final filmItems = _orderEditorialItems(
+      films.map(_HomeContentItem.fromFilm),
+    );
+    final seriesItems = _orderEditorialItems(
+      series.map(_HomeContentItem.fromSeries),
+    );
     final spotlightItems = _dedupeItems([
       ...featuredItems,
       ...newItems,
@@ -518,6 +523,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                       metadata: item.metadata,
                       badge: item.primaryBadge,
                       width: layout.cardWidth,
+                      imageAlignment: item.posterAlignment,
                       isFavorite: isFavorite,
                       onFavoriteTap: () => _toggleFavorite(item),
                       onTap: () => _openDetails(item),
@@ -614,9 +620,7 @@ class _HeroSlide extends StatelessWidget {
           width: double.infinity,
           height: layout.heroHeight,
           borderRadius: BorderRadius.zero,
-          alignment: item.title.toLowerCase().contains('elle et moi')
-              ? Alignment.topCenter
-              : Alignment.center,
+          alignment: item.heroAlignment,
         ),
         const _HeroOverlay(),
         Positioned(
@@ -1263,7 +1267,7 @@ class _NotificationsSheet extends StatelessWidget {
                   iconColor: AppColors.brandGoldLight,
                   title: 'Nouvelle série en approche',
                   body:
-                      'La femme du Mbenguiste arrive bientôt sur GUEZS FILMS.',
+                      "$mbenguisteDisplayTitle arrive bientôt sur GUEZS FILMS.",
                   time: 'Aujourd’hui',
                   isNew: true,
                 ),
@@ -1462,42 +1466,64 @@ class _HomeContentItem {
     required this.metadata,
     required this.heroBadges,
     required this.genres,
+    this.posterAlignment = Alignment.center,
+    this.heroAlignment = Alignment.center,
     this.rating,
   });
 
   factory _HomeContentItem.fromFilm(FilmEntity film) {
     final badges = _filmBadges(film);
+    final title = canonicalContentTitle(film.title);
+    final isElleEtMoa = isElleEtMoaContent(id: film.id, title: title);
     return _HomeContentItem(
       id: film.id,
       contentType: 'film',
-      title: film.title,
-      description: film.description,
-      posterUrl: film.posterUrl,
-      backdropUrl: film.backdropUrl,
+      title: title,
+      description: canonicalContentCopy(film.description),
+      posterUrl: isElleEtMoa
+          ? 'assets/images/elle_et_moi_affiche1.png'
+          : film.posterUrl,
+      backdropUrl: isElleEtMoa
+          ? 'assets/images/hero_elle_et_moi.png'
+          : film.backdropUrl,
       year: film.year,
       metadata: '${film.year} • Film • ${film.durationMin} min',
       heroBadges: badges,
       genres: film.genres,
+      posterAlignment: isElleEtMoa
+          ? const Alignment(-0.92, 0)
+          : Alignment.center,
+      heroAlignment: isElleEtMoa ? const Alignment(-0.78, 0) : Alignment.center,
       rating: film.rating,
     );
   }
 
   factory _HomeContentItem.fromSeries(SeriesEntity series) {
     final badges = _seriesBadges(series);
+    final title = canonicalContentTitle(series.title);
+    final isElleEtMoa = isElleEtMoaContent(id: series.id, title: title);
     final seasons = series.numberOfSeasons <= 1
         ? '1 saison'
         : '${series.numberOfSeasons} saisons';
     return _HomeContentItem(
       id: series.id,
       contentType: 'series',
-      title: series.title,
-      description: series.description,
-      posterUrl: series.posterUrl,
-      backdropUrl: series.backdropUrl,
+      title: title,
+      description: canonicalContentCopy(series.description),
+      posterUrl: isElleEtMoa
+          ? 'assets/images/elle_et_moi_affiche1.png'
+          : series.posterUrl,
+      backdropUrl: isElleEtMoa
+          ? 'assets/images/hero_elle_et_moi.png'
+          : series.backdropUrl,
       year: series.year,
       metadata: '${series.year} • Série • $seasons',
       heroBadges: badges,
       genres: series.genres,
+      posterAlignment: isElleEtMoa
+          ? const Alignment(-0.92, 0)
+          : Alignment.center,
+      heroAlignment: isElleEtMoa ? const Alignment(-0.78, 0) : Alignment.center,
     );
   }
 
@@ -1511,6 +1537,8 @@ class _HomeContentItem {
   final String metadata;
   final List<String> heroBadges;
   final List<String> genres;
+  final Alignment posterAlignment;
+  final Alignment heroAlignment;
   final double? rating;
 
   bool get isFilm => contentType == 'film';
@@ -1543,7 +1571,19 @@ List<_HomeContentItem> _dedupeItems(Iterable<_HomeContentItem> items) {
   for (final item in items) {
     if (seen.add(item.stableKey)) result.add(item);
   }
-  return result;
+  return _orderEditorialItems(result);
+}
+
+List<_HomeContentItem> _orderEditorialItems(Iterable<_HomeContentItem> items) {
+  final indexed = items.indexed.toList(growable: false);
+  indexed.sort((a, b) {
+    final priority = contentEditorialPriority(
+      id: a.$2.id,
+      title: a.$2.title,
+    ).compareTo(contentEditorialPriority(id: b.$2.id, title: b.$2.title));
+    return priority != 0 ? priority : a.$1.compareTo(b.$1);
+  });
+  return indexed.map((entry) => entry.$2).toList(growable: false);
 }
 
 List<FilmEntity> _recommendedFilms(List<FilmEntity> films) {

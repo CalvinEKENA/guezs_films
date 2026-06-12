@@ -30,7 +30,7 @@ class DownloadsPage extends ConsumerWidget {
             if (!PlatformCapabilities.supportsDownloads) {
               return Column(
                 children: [
-                  _DownloadsHeader(responsive: responsive),
+                  _DownloadsHeader(responsive: responsive, mobileOnly: true),
                   Expanded(
                     child: PremiumEmptyState(
                       icon: Icons.phone_android_rounded,
@@ -89,10 +89,15 @@ class DownloadsPage extends ConsumerWidget {
 }
 
 class _DownloadsHeader extends StatelessWidget {
-  const _DownloadsHeader({required this.responsive, this.count});
+  const _DownloadsHeader({
+    required this.responsive,
+    this.count,
+    this.mobileOnly = false,
+  });
 
   final ResponsiveValues responsive;
   final int? count;
+  final bool mobileOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -106,10 +111,10 @@ class _DownloadsHeader extends StatelessWidget {
       ),
       child: PremiumPageHeader(
         title: 'Téléchargements',
-        subtitle: PlatformCapabilities.supportsDownloads
-            ? 'Vos contenus disponibles sans connexion sur cet appareil.'
-            : 'Le mode hors-ligne accompagne vos déplacements sur mobile.',
-        trailing: count != null && count! > 0
+        subtitle: 'Vos contenus disponibles sans connexion sur cet appareil.',
+        trailing: mobileOnly
+            ? const _MobileOnlyBadge()
+            : count != null && count! > 0
             ? _DownloadCountBadge(count: count!)
             : null,
       ),
@@ -464,6 +469,28 @@ class _DownloadCountBadge extends StatelessWidget {
       child: Text(
         '$count fichier${count > 1 ? 's' : ''}',
         style: AppTextStyles.labelMedium.copyWith(
+          color: AppColors.brandGoldLight,
+        ),
+      ),
+    );
+  }
+}
+
+class _MobileOnlyBadge extends StatelessWidget {
+  const _MobileOnlyBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceObsidian.withValues(alpha: 0.82),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AppColors.glassBorder(0.3)),
+      ),
+      child: Text(
+        'Disponible sur mobile',
+        style: AppTextStyles.labelSmall.copyWith(
           color: AppColors.brandGoldLight,
         ),
       ),

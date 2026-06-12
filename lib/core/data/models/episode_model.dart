@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../content/content_presentation.dart';
 import '../../domain/entities/episode_entity.dart';
 
 class EpisodeModel extends EpisodeEntity {
@@ -35,8 +36,8 @@ class EpisodeModel extends EpisodeEntity {
       seriesId: seriesId,
       seasonId: seasonId,
       episodeNumber: _readInt(data['episodeNumber']),
-      title: data['title'] as String? ?? '',
-      description: data['description'] as String? ?? '',
+      title: canonicalContentTitle(data['title'] as String? ?? ''),
+      description: canonicalContentCopy(data['description'] as String? ?? ''),
       thumbnailUrl: data['thumbnailUrl'] as String? ?? '',
       videoUrl: data['videoUrl'] as String? ?? '',
       durationSec: _readInt(data['durationSec']),

@@ -21,18 +21,17 @@ class UserProfileModel extends UserProfileEntity {
       emoji: data['emoji'] as String? ?? '🎬',
       colorIndex: (data['colorIndex'] as num?)?.toInt() ?? 0,
       isKids: data['isKids'] as bool? ?? false,
-      createdAt:
-          (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
 
   Map<String, dynamic> toFirestore() => {
-        'name': name,
-        'emoji': emoji,
-        'colorIndex': colorIndex,
-        'isKids': isKids,
-        'createdAt': Timestamp.fromDate(createdAt),
-      };
+    'name': name,
+    'emoji': emoji,
+    'colorIndex': colorIndex,
+    'isKids': isKids,
+    'createdAt': Timestamp.fromDate(createdAt),
+  };
 
   @override
   UserProfileModel copyWith({

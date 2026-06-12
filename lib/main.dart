@@ -10,6 +10,7 @@ import 'core/platform/platform_capabilities.dart';
 import 'core/routes/app_router.dart';
 import 'core/constants/app_constants.dart';
 import 'core/theme/app_theme.dart';
+import 'core/widgets/universal_app_shell.dart';
 
 /// Guezs Films - Premium Streaming Application
 /// Premium streaming app with cinematic mobile and web experiences.
@@ -62,6 +63,9 @@ class GuezFilmsApp extends ConsumerWidget {
       theme: AppTheme.darkTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.dark,
+
+      builder: (context, child) =>
+          UniversalAppShell(child: child ?? const SizedBox.shrink()),
 
       // Router configuration
       routerConfig: router,

@@ -39,24 +39,26 @@ class FavoritesRemoteDataSourceImpl implements FavoritesRemoteDataSource {
   @override
   Future<List<FavoriteMovieModel>> getFavorites(String userId) async {
     try {
-      final snapshot = await _getCollection(userId)
-          .orderBy('addedAt', descending: true)
-          .get();
-      
+      final snapshot = await _getCollection(
+        userId,
+      ).orderBy('addedAt', descending: true).get();
+
       return snapshot.docs
           .map((doc) => FavoriteMovieModel.fromMap(doc.data()))
           .toList();
     } catch (e) {
-      throw ServerException('Erreur Firestore lors de la récupération des favoris');
+      throw ServerException(
+        'Erreur Firestore lors de la récupération des favoris',
+      );
     }
   }
 
   @override
   Stream<List<FavoriteMovieModel>> watchFavorites(String userId) {
     return _getCollection(userId).snapshots().map(
-          (snapshot) => snapshot.docs
-              .map((doc) => FavoriteMovieModel.fromMap(doc.data()))
-              .toList(),
-        );
+      (snapshot) => snapshot.docs
+          .map((doc) => FavoriteMovieModel.fromMap(doc.data()))
+          .toList(),
+    );
   }
 }

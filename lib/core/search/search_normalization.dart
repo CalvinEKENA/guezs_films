@@ -23,7 +23,21 @@ List<String> buildSearchQueryTokens(String query) {
   if (folded.length < minimumSearchLength) return const [];
 
   final tokens = <String>{};
-  for (final value in [raw, folded]) {
+  final values = <String>{raw, folded};
+  if (folded.contains('epouse') || folded.contains('femme')) {
+    values.addAll(const [
+      'la femme du mbenguiste',
+      'femme',
+      'l epouse du mbenguiste',
+      'epouse',
+    ]);
+  }
+  if (folded.contains('elle') &&
+      (folded.contains('moi') || folded.contains('moa'))) {
+    values.addAll(const ['elle et moi', 'elle et moa', 'moi', 'moa']);
+  }
+
+  for (final value in values) {
     if (value.length >= minimumSearchLength) tokens.add(value);
     for (final word in value.split(' ')) {
       if (word.length >= minimumSearchLength) tokens.add(word);

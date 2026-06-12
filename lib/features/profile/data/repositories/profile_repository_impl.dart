@@ -11,8 +11,8 @@ class ProfileRepositoryImpl implements ProfileRepository {
   ProfileRepositoryImpl({
     required FirebaseAuth auth,
     required FirebaseFirestore firestore,
-  })  : _auth = auth,
-        _firestore = firestore;
+  }) : _auth = auth,
+       _firestore = firestore;
 
   @override
   Future<Either<Failure, void>> updateDisplayName(String name) async {
@@ -45,7 +45,7 @@ class ProfileRepositoryImpl implements ProfileRepository {
     try {
       final doc = await _firestore.collection('users').doc(userId).get();
       if (!doc.exists) return const Right(false);
-      
+
       final data = doc.data() as Map<String, dynamic>;
       return Right(data['isPremium'] == true);
     } catch (e) {
@@ -55,14 +55,10 @@ class ProfileRepositoryImpl implements ProfileRepository {
 
   @override
   Stream<bool> watchPremiumStatus(String userId) {
-    return _firestore
-        .collection('users')
-        .doc(userId)
-        .snapshots()
-        .map((doc) {
-          if (!doc.exists) return false;
-          final data = doc.data() as Map<String, dynamic>;
-          return data['isPremium'] == true;
-        });
+    return _firestore.collection('users').doc(userId).snapshots().map((doc) {
+      if (!doc.exists) return false;
+      final data = doc.data() as Map<String, dynamic>;
+      return data['isPremium'] == true;
+    });
   }
 }

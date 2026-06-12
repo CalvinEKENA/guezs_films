@@ -11,7 +11,9 @@ import 'package:guezs_films/features/favorites/domain/repositories/favorites_rep
 import 'package:guezs_films/features/favorites/data/repositories/favorites_repository_impl.dart';
 
 // Source de données Firestore
-final favoritesRemoteDataSourceProvider = Provider<FavoritesRemoteDataSource>((ref) {
+final favoritesRemoteDataSourceProvider = Provider<FavoritesRemoteDataSource>((
+  ref,
+) {
   return FavoritesRemoteDataSourceImpl(ref.watch(firebaseFirestoreProvider));
 });
 
@@ -41,7 +43,7 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<FavoriteMovie>>> {
   Future<void> _initialLoad() async {
     // 1. Charger le local en premier pour une UI réactive
     await loadFavorites();
-    
+
     // 2. Lancer la synchronisation temps réel silencieuse
     _startRealtimeSync();
   }
@@ -60,7 +62,8 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<FavoriteMovie>>> {
     _syncSubscription = _repository.watchCloudUpdates().listen((result) {
       result.fold(
         (l) => debugPrint('Silently failed realtime sync: ${l.message}'),
-        (r) => loadFavorites(), // Recharger l'UI si les favoris locaux ont changé
+        (r) =>
+            loadFavorites(), // Recharger l'UI si les favoris locaux ont changé
       );
     });
   }

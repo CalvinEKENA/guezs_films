@@ -91,21 +91,15 @@ final episodeDetailsProvider =
           .getEpisodeById(params.seriesId, params.seasonId, params.episodeId);
     });
 
-final searchFilmsProvider =
-    FutureProvider.autoDispose.family<List<FilmEntity>, String>((
-      ref,
-      query,
-    ) async {
+final searchFilmsProvider = FutureProvider.autoDispose
+    .family<List<FilmEntity>, String>((ref, query) async {
       final normalizedQuery = normalizeSearchText(query);
       if (normalizedQuery.length < minimumSearchLength) return const [];
       return ref.watch(contentRepositoryProvider).searchFilms(query);
     });
 
-final searchSeriesProvider =
-    FutureProvider.autoDispose.family<List<SeriesEntity>, String>((
-      ref,
-      query,
-    ) async {
+final searchSeriesProvider = FutureProvider.autoDispose
+    .family<List<SeriesEntity>, String>((ref, query) async {
       final normalizedQuery = normalizeSearchText(query);
       if (normalizedQuery.length < minimumSearchLength) return const [];
       return ref.watch(contentRepositoryProvider).searchSeries(query);

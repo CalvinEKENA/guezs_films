@@ -1,4 +1,6 @@
 import 'package:hive/hive.dart';
+
+import '../../../../core/content/content_presentation.dart';
 import '../../domain/entities/download_item.dart';
 
 part 'download_item_model.g.dart';
@@ -47,7 +49,7 @@ class DownloadItemModel extends HiveObject {
   factory DownloadItemModel.fromEntity(DownloadItem entity) {
     return DownloadItemModel(
       id: entity.id,
-      title: entity.title,
+      title: canonicalContentTitle(entity.title),
       posterPath: entity.posterPath,
       videoUrl: entity.videoUrl,
       localPath: entity.localPath,
@@ -61,14 +63,16 @@ class DownloadItemModel extends HiveObject {
   DownloadItem toEntity() {
     DownloadStatus parsedStatus;
     try {
-      parsedStatus = DownloadStatus.values.firstWhere((e) => e.toString() == status);
+      parsedStatus = DownloadStatus.values.firstWhere(
+        (e) => e.toString() == status,
+      );
     } catch (_) {
       parsedStatus = DownloadStatus.failed;
     }
 
     return DownloadItem(
       id: id,
-      title: title,
+      title: canonicalContentTitle(title),
       posterPath: posterPath,
       videoUrl: videoUrl,
       localPath: localPath,

@@ -16,6 +16,7 @@ class PremiumContentCard extends StatefulWidget {
     this.badge,
     this.isFavorite = false,
     this.onFavoriteTap,
+    this.imageAlignment = Alignment.center,
   });
 
   final String title;
@@ -26,6 +27,7 @@ class PremiumContentCard extends StatefulWidget {
   final VoidCallback onTap;
   final bool isFavorite;
   final VoidCallback? onFavoriteTap;
+  final Alignment imageAlignment;
 
   @override
   State<PremiumContentCard> createState() => _PremiumContentCardState();
@@ -75,6 +77,7 @@ class _PremiumContentCardState extends State<PremiumContentCard> {
                     highlighted: _highlighted,
                     isFavorite: widget.isFavorite,
                     onFavoriteTap: widget.onFavoriteTap,
+                    imageAlignment: widget.imageAlignment,
                   ),
                   const SizedBox(height: 10),
                   Text(
@@ -110,6 +113,7 @@ class _PosterFrame extends StatelessWidget {
     required this.imageUrl,
     required this.highlighted,
     required this.isFavorite,
+    required this.imageAlignment,
     this.badge,
     this.onFavoriteTap,
   });
@@ -118,6 +122,7 @@ class _PosterFrame extends StatelessWidget {
   final String? imageUrl;
   final bool highlighted;
   final bool isFavorite;
+  final Alignment imageAlignment;
   final String? badge;
   final VoidCallback? onFavoriteTap;
 
@@ -161,6 +166,7 @@ class _PosterFrame extends StatelessWidget {
                 imageUrl: imageUrl,
                 width: width,
                 fit: BoxFit.cover,
+                alignment: imageAlignment,
                 borderRadius: radius,
               ),
               Positioned.fill(

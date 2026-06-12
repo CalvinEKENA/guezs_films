@@ -7,15 +7,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:guezs_films/core/config/firebase_runtime_config.dart';
 import 'package:guezs_films/core/constants/app_constants.dart';
+import 'package:guezs_films/core/content/content_presentation.dart';
 import 'package:guezs_films/core/domain/entities/episode_entity.dart';
 import 'package:guezs_films/core/domain/entities/film_entity.dart';
 import 'package:guezs_films/core/domain/entities/season_entity.dart';
 import 'package:guezs_films/core/domain/entities/series_entity.dart';
 import 'package:guezs_films/core/providers/content_providers.dart';
+import 'package:guezs_films/core/responsive/responsive_values.dart';
 import 'package:guezs_films/core/routes/app_router.dart';
 import 'package:guezs_films/core/routes/route_constants.dart';
 import 'package:guezs_films/core/search/search_normalization.dart';
 import 'package:guezs_films/core/widgets/premium_states.dart';
+import 'package:guezs_films/core/widgets/universal_app_shell.dart';
 import 'package:guezs_films/features/access/domain/entities/watch_access_result.dart';
 import 'package:guezs_films/features/access/data/repositories/cloud_functions_watch_access_repository.dart';
 import 'package:guezs_films/features/access/presentation/providers/watch_access_providers.dart';
@@ -48,6 +51,57 @@ void main() {
   testWidgets('App renders correctly', (WidgetTester tester) async {
     // TODO: Add proper widget tests for Guezs Films
     expect(true, isTrue);
+  });
+
+  test('Legacy catalog titles use the current editorial names', () {
+    expect(
+      canonicalContentTitle('La femme du Mbenguiste'),
+      mbenguisteDisplayTitle,
+    );
+    expect(canonicalContentTitle('Elle et moi'), elleEtMoaDisplayTitle);
+    expect(
+      contentEditorialPriority(
+        id: 'femme-mbenguiste',
+        title: 'La femme du Mbenguiste',
+      ),
+      lessThan(
+        contentEditorialPriority(id: 'elle-et-moi', title: 'Elle et moi'),
+      ),
+    );
+  });
+
+  test('Search aliases preserve old Firestore tokens', () {
+    expect(buildSearchQueryTokens('épouse').contains('femme'), isTrue);
+    expect(buildSearchQueryTokens('ELLE ET MOA').contains('moi'), isTrue);
+  });
+
+  test('Responsive values stay in the universal mobile frame', () {
+    final responsive = ResponsiveValues.fromSize(const Size(1440, 900));
+    expect(responsive.width, AppConstants.universalAppMaxWidth);
+    expect(responsive.isDesktop, isFalse);
+    expect(responsive.posterColumns, 3);
+  });
+
+  testWidgets('Universal shell constrains wide web layouts', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1440, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    Size? framedSize;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: UniversalAppShell(
+          child: Builder(
+            builder: (context) {
+              framedSize = MediaQuery.sizeOf(context);
+              return const SizedBox.expand();
+            },
+          ),
+        ),
+      ),
+    );
+
+    expect(framedSize?.width, AppConstants.universalAppMaxWidth);
+    expect(framedSize?.height, 900);
   });
 
   test('Player content requests expose stable local progress keys', () {
@@ -440,6 +494,8 @@ void main() {
     await tester.pump(AppConstants.searchDebounce);
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Le Voyage Bleu'));
+    await tester.ensureVisible(find.text('Le Voyage Bleu'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Le Voyage Bleu'));
     await tester.pumpAndSettle();
 
@@ -785,7 +841,7 @@ void main() {
     expect(find.text('Junior'), findsOneWidget);
     expect(find.text('Standard'), findsOneWidget);
     expect(find.text('Enfant'), findsOneWidget);
-    expect(find.text('LA FEMME DU MBENGUISTE'), findsNothing);
+    expect(find.text(mbenguisteDisplayTitle), findsNothing);
   });
 
   testWidgets('Unknown routes show a product-safe error state', (tester) async {

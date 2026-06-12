@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../content/content_presentation.dart';
 import '../../domain/entities/series_entity.dart';
 
 class SeriesModel extends SeriesEntity {
@@ -38,8 +39,8 @@ class SeriesModel extends SeriesEntity {
 
     return SeriesModel(
       id: doc.id,
-      title: data['title'] as String? ?? '',
-      description: data['description'] as String? ?? '',
+      title: canonicalContentTitle(data['title'] as String? ?? ''),
+      description: canonicalContentCopy(data['description'] as String? ?? ''),
       posterUrl: data['posterUrl'] as String? ?? '',
       backdropUrl: data['backdropUrl'] as String? ?? '',
       genres: _readStringList(data['genres']),

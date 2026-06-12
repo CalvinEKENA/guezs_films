@@ -21,7 +21,9 @@ class DownloadRepositoryImpl implements DownloadRepository {
       final items = box.values.map((model) => model.toEntity()).toList();
       return Right(items);
     } catch (e) {
-      return Left(CacheFailure('Erreur lors de la lecture des téléchargements: $e'));
+      return Left(
+        CacheFailure('Erreur lors de la lecture des téléchargements: $e'),
+      );
     }
   }
 
@@ -47,7 +49,9 @@ class DownloadRepositoryImpl implements DownloadRepository {
       await box.put(item.id, model);
       return const Right(null);
     } catch (e) {
-      return Left(CacheFailure('Erreur lors de la sauvegarde du téléchargement: $e'));
+      return Left(
+        CacheFailure('Erreur lors de la sauvegarde du téléchargement: $e'),
+      );
     }
   }
 

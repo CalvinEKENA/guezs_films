@@ -30,20 +30,26 @@ class ProfileController extends StateNotifier<AsyncValue<void>> {
 
   Future<void> updateName(String name) async {
     state = const AsyncValue.loading();
-    final result = await _ref.read(profileRepositoryProvider).updateDisplayName(name);
-    
+    final result = await _ref
+        .read(profileRepositoryProvider)
+        .updateDisplayName(name);
+
     result.fold(
-      (failure) => state = AsyncValue.error(failure.message, StackTrace.current),
+      (failure) =>
+          state = AsyncValue.error(failure.message, StackTrace.current),
       (_) => state = const AsyncValue.data(null),
     );
   }
 
   Future<void> updateAvatar(String photoUrl) async {
     state = const AsyncValue.loading();
-    final result = await _ref.read(profileRepositoryProvider).updatePhotoUrl(photoUrl);
-    
+    final result = await _ref
+        .read(profileRepositoryProvider)
+        .updatePhotoUrl(photoUrl);
+
     result.fold(
-      (failure) => state = AsyncValue.error(failure.message, StackTrace.current),
+      (failure) =>
+          state = AsyncValue.error(failure.message, StackTrace.current),
       (_) => state = const AsyncValue.data(null),
     );
   }

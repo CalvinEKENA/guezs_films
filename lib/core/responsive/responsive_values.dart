@@ -16,12 +16,12 @@ class ResponsiveValues {
     required this.posterColumns,
     required this.posterWidth,
     required this.gridGap,
-    required this.shouldUseNavigationRail,
-    required this.shouldUseBottomNavigation,
   });
 
   factory ResponsiveValues.fromSize(Size size) {
-    final width = size.width;
+    final width = size.width
+        .clamp(0, AppConstants.universalAppMaxWidth)
+        .toDouble();
     final isMobile = ResponsiveBreakpoints.isMobile(width);
     final isTablet = ResponsiveBreakpoints.isTablet(width);
     final isDesktop = ResponsiveBreakpoints.isDesktop(width);
@@ -66,8 +66,6 @@ class ResponsiveValues {
       posterColumns: posterColumns,
       posterWidth: posterWidth.clamp(112.0, isDesktop ? 196.0 : 168.0),
       gridGap: gridGap,
-      shouldUseNavigationRail: width >= ResponsiveBreakpoints.tablet,
-      shouldUseBottomNavigation: width < ResponsiveBreakpoints.tablet,
     );
   }
 
@@ -86,8 +84,6 @@ class ResponsiveValues {
   final int posterColumns;
   final double posterWidth;
   final double gridGap;
-  final bool shouldUseNavigationRail;
-  final bool shouldUseBottomNavigation;
 
   double get railPosterWidth {
     if (isWideDesktop) return 184;
@@ -111,8 +107,6 @@ class ResponsiveValues {
     if (isTablet) return 5;
     return 4;
   }
-
-  double get navigationRailWidth => isDesktop ? 244 : 88;
 }
 
 int _posterColumnsForWidth(double width) {

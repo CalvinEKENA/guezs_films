@@ -16,9 +16,11 @@ class UserProfileRepositoryImpl implements UserProfileRepository {
     return _ref(userId)
         .orderBy('createdAt')
         .snapshots()
-        .map((snap) => snap.docs
-            .map((doc) => UserProfileModel.fromFirestore(doc))
-            .toList());
+        .map(
+          (snap) => snap.docs
+              .map((doc) => UserProfileModel.fromFirestore(doc))
+              .toList(),
+        );
   }
 
   @override

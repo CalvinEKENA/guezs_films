@@ -42,6 +42,9 @@ class AppConstants {
   /// Standard screen padding
   static const double screenPadding = 16.0;
 
+  /// Maximum visual width of the universal mobile-first application frame.
+  static const double universalAppMaxWidth = 480.0;
+
   /// Content section title padding
   static const double sectionPadding = 12.0;
 

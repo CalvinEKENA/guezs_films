@@ -19,8 +19,8 @@ class FavoritesRepositoryImpl implements FavoritesRepository {
   FavoritesRepositoryImpl({
     required FavoritesRemoteDataSource remoteDataSource,
     required AuthRepository authRepository,
-  })  : _remoteDataSource = remoteDataSource,
-        _authRepository = authRepository;
+  }) : _remoteDataSource = remoteDataSource,
+       _authRepository = authRepository;
 
   Future<Box<FavoriteMovieModel>> _getBox() async {
     try {
@@ -63,7 +63,9 @@ class FavoritesRepositoryImpl implements FavoritesRepository {
     try {
       final box = await _getBox();
       final List<FavoriteMovieModel> models = box.values
-          .where((model) => !model.isDeleted) // Ignorer les éléments soft-delete
+          .where(
+            (model) => !model.isDeleted,
+          ) // Ignorer les éléments soft-delete
           .toList();
 
       // Trier par date d'ajout décroissante
@@ -141,10 +143,10 @@ class FavoritesRepositoryImpl implements FavoritesRepository {
       if (user == null) return const Right(null);
 
       final box = await _getBox();
-      
+
       // 1. Récupération des favoris Cloud
       final remoteFavorites = await _remoteDataSource.getFavorites(user.uid);
-      
+
       // 2. Merge avec la logique de dates
       await _mergeWithLocal(box, remoteFavorites, user.uid);
 
@@ -165,7 +167,9 @@ class FavoritesRepositoryImpl implements FavoritesRepository {
 
     try {
       final box = await _getBox();
-      await for (final remoteFavorites in _remoteDataSource.watchFavorites(user.uid)) {
+      await for (final remoteFavorites in _remoteDataSource.watchFavorites(
+        user.uid,
+      )) {
         await _mergeWithLocal(box, remoteFavorites, user.uid);
         yield const Right(null);
       }
@@ -183,9 +187,13 @@ class FavoritesRepositoryImpl implements FavoritesRepository {
     }
   }
 
-  Future<void> _mergeWithLocal(Box<FavoriteMovieModel> box, List<FavoriteMovieModel> remoteFavorites, String userId) async {
+  Future<void> _mergeWithLocal(
+    Box<FavoriteMovieModel> box,
+    List<FavoriteMovieModel> remoteFavorites,
+    String userId,
+  ) async {
     final localModels = box.values.toList();
-    
+
     // Pour chaque document distant
     for (final remote in remoteFavorites) {
       final storageKey = remote.storageKey;
@@ -209,7 +217,9 @@ class FavoritesRepositoryImpl implements FavoritesRepository {
 
     // Pousser les favoris locaux exclusifs au device (n'ont pas encore été synchronisés)
     for (final local in localModels) {
-      final existsInCloud = remoteFavorites.any((r) => r.storageKey == local.storageKey);
+      final existsInCloud = remoteFavorites.any(
+        (r) => r.storageKey == local.storageKey,
+      );
       if (!existsInCloud) {
         await _remoteDataSource.addFavorite(userId, local);
       }

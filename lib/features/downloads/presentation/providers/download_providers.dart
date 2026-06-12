@@ -17,7 +17,10 @@ final activeDownloadsProvider = StreamProvider<List<DownloadItem>>((ref) {
   return repository.watchDownloads();
 });
 
-final downloadStateProvider = StreamProvider.family<DownloadItem?, String>((ref, id) {
+final downloadStateProvider = StreamProvider.family<DownloadItem?, String>((
+  ref,
+  id,
+) {
   final repository = ref.watch(downloadRepositoryProvider);
   return repository.watchDownload(id);
 });

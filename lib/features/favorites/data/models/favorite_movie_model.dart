@@ -1,4 +1,6 @@
 import 'package:hive/hive.dart';
+
+import '../../../../core/content/content_presentation.dart';
 import '../../domain/entities/favorite_movie.dart';
 
 part 'favorite_movie_model.g.dart';
@@ -43,7 +45,7 @@ class FavoriteMovieModel extends HiveObject {
   factory FavoriteMovieModel.fromEntity(FavoriteMovie entity) {
     return FavoriteMovieModel(
       id: entity.id,
-      title: entity.title,
+      title: canonicalContentTitle(entity.title),
       posterPath: entity.posterPath,
       contentType: entity.contentType,
       addedAt: entity.addedAt,
@@ -56,7 +58,7 @@ class FavoriteMovieModel extends HiveObject {
   FavoriteMovie toEntity() {
     return FavoriteMovie(
       id: id,
-      title: title,
+      title: canonicalContentTitle(title),
       posterPath: posterPath,
       contentType: contentType,
       addedAt: addedAt,

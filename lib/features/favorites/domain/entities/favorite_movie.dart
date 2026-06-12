@@ -43,5 +43,13 @@ class FavoriteMovie extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, title, posterPath, contentType, addedAt, isDeleted, updatedAt];
+  List<Object?> get props => [
+    id,
+    title,
+    posterPath,
+    contentType,
+    addedAt,
+    isDeleted,
+    updatedAt,
+  ];
 }

@@ -63,16 +63,17 @@ class _SplashPageState extends ConsumerState<SplashPage>
         curve: const Interval(0.02, 0.55, curve: Curves.easeInOut),
       ),
     );
-    _beamOpacity = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 15),
-      TweenSequenceItem(tween: ConstantTween(1.0), weight: 60),
-      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0), weight: 25),
-    ]).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.02, 0.55),
-      ),
-    );
+    _beamOpacity =
+        TweenSequence<double>([
+          TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 15),
+          TweenSequenceItem(tween: ConstantTween(1.0), weight: 60),
+          TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0), weight: 25),
+        ]).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: const Interval(0.02, 0.55),
+          ),
+        );
 
     // ── Logo fade-in + scale-up (emerges as beam passes center) ──
     _logoOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -89,15 +90,16 @@ class _SplashPageState extends ConsumerState<SplashPage>
     );
 
     // ── Golden glow behind logo — persists subtly ──
-    _glowOpacity = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 0.0, end: 0.8), weight: 30),
-      TweenSequenceItem(tween: Tween(begin: 0.8, end: 0.35), weight: 70),
-    ]).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.40, 0.80, curve: Curves.easeInOut),
-      ),
-    );
+    _glowOpacity =
+        TweenSequence<double>([
+          TweenSequenceItem(tween: Tween(begin: 0.0, end: 0.8), weight: 30),
+          TweenSequenceItem(tween: Tween(begin: 0.8, end: 0.35), weight: 70),
+        ]).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: const Interval(0.40, 0.80, curve: Curves.easeInOut),
+          ),
+        );
     _glowRadius = Tween<double>(begin: 60.0, end: 100.0).animate(
       CurvedAnimation(
         parent: _controller,

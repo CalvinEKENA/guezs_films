@@ -3,10 +3,10 @@
  * ─────────────────────────────────────────────────────────────────────────────
  * Ce script :
  *   1. Upload les 17 photos d'épisodes vers Firebase Storage
- *   2. Upload la vidéo "Elle et moi.mp4" vers Firebase Storage
+ *   2. Upload les médias de "ELLE ET MOA" vers Firebase Storage
  *   3. Crée les documents Firestore :
- *      - Série "La femme du Mbenguiste" (+ 1 saison + 17 épisodes)
- *      - Film "Elle et moi"
+ *      - Série "L'EPOUSE DU MBENGUISTE" (+ 1 saison + 17 épisodes)
+ *      - Série "ELLE ET MOA"
  *
  * Pré-requis :
  *   • npm install  (dans le dossier scripts/)
@@ -196,8 +196,8 @@ async function main() {
     console.warn(`   ⚠️  Erreur lors du nettoyage Firestore : ${e.message}`);
   }
 
-  // ── 2. Upload des médias "Elle et moi" (4 affiches + 4 vidéos) ──────────────
-  console.log('\n🎥  Upload des médias "Elle et moi"...');
+  // ── 2. Upload des médias "ELLE ET MOA" (fichiers locaux historiques) ───────
+  console.log('\n🎥  Upload des médias "ELLE ET MOA"...');
   const VIDEOS_DIR = path.join(ASSETS, 'videos');
   const elleThumbs = {};
   const elleVideos = {};
@@ -209,7 +209,7 @@ async function main() {
     elleThumbs[i] = await ensureAsset(
       afficheLocal,
       `series/elle-et-moi/affiches/affiche${pad(i)}.png`,
-      null, // Pas de migration pour Elle et moi (déjà OK)
+      null, // Pas de migration de chemin Storage (déjà OK)
       'image/png'
     );
 
@@ -223,17 +223,17 @@ async function main() {
       'video/mp4'
     );
   }
-  console.log('   ✅ Médias "Elle et moi" uploadés');
+  console.log('   ✅ Médias "ELLE ET MOA" uploadés');
 
-  // ── 3. Seed Firestore — Série "La femme du Mbenguiste" ──────────────────────
+  // ── 3. Seed Firestore — Série "L'EPOUSE DU MBENGUISTE" ─────────────────────
   console.log('\n🗄️   Seed Firestore — Série...');
   const SERIES_ID  = 'femme-mbenguiste';
   const SEASON_ID  = 'saison-1';
-  const SERIES_TITLE = "La femme du Mbenguiste";
+  const SERIES_TITLE = "L'EPOUSE DU MBENGUISTE";
 
   const seriesDoc = {
     title:           SERIES_TITLE,
-    description:     "Plongez dans l'histoire captivante de La femme du Mbenguiste — amour, trahison et rebondissements au fil de 17 épisodes inoubliables.",
+    description:     "Plongez dans l'histoire captivante de L'EPOUSE DU MBENGUISTE — amour, trahison et rebondissements au fil de 17 épisodes inoubliables.",
     posterUrl:       episodeThumbnailUrls[1] || '',
     backdropUrl:     episodeThumbnailUrls[1] || '',
     genres:          ['Drame', 'Romance', 'Africain'],
@@ -274,7 +274,7 @@ async function main() {
       seasonId:      SEASON_ID,
       episodeNumber: i,
       title:         `Épisode ${i}`,
-      description:   `La femme du Mbenguiste — Épisode ${i}. Découvrez la suite des aventures dans ce nouvel épisode.`,
+      description:   `L'EPOUSE DU MBENGUISTE — Épisode ${i}. Découvrez la suite des aventures dans ce nouvel épisode.`,
       thumbnailUrl:  episodeThumbnailUrls[i] || '',
       videoUrl:      '',
       durationSec:   0,
@@ -286,10 +286,10 @@ async function main() {
   await batch.commit();
   console.log('   ✅ Batch commit — 17 épisodes enregistrés');
 
-  // ── 6. Seed Firestore — Série "Elle et moi" (4 épisodes) ────────────────────
-  console.log('\n🎬  Seed Firestore — Série "Elle et moi"...');
+  // ── 6. Seed Firestore — Série "ELLE ET MOA" (4 épisodes) ───────────────────
+  console.log('\n🎬  Seed Firestore — Série "ELLE ET MOA"...');
   const ELLE_ID      = 'elle-et-moi';
-  const ELLE_TITLE   = 'Elle et moi';
+  const ELLE_TITLE   = 'ELLE ET MOA';
   const ELLE_SEASON  = 'saison-1';
 
   await db.collection('series').doc(ELLE_ID).set({
@@ -320,7 +320,7 @@ async function main() {
       seasonId:      ELLE_SEASON,
       episodeNumber: i,
       title:         `Épisode ${i}`,
-      description:   `Elle et moi — Épisode ${i}. Une nouvelle page de cette histoire bouleversante.`,
+      description:   `ELLE ET MOA — Épisode ${i}. Une nouvelle page de cette histoire bouleversante.`,
       thumbnailUrl:  elleThumbs[i] || '',
       videoUrl:      elleVideos[i] || '',
       durationSec:   0,
@@ -335,8 +335,8 @@ async function main() {
   console.log('\n─────────────────────────────────────────────────────');
   console.log('✅  Seed terminé avec succès !');
   console.log('');
-  console.log('   📺  Série 1 : La femme du Mbenguiste (17 épisodes)');
-  console.log('   📺  Série 2 : Elle et moi (4 épisodes)');
+  console.log("   📺  Série 1 : L'EPOUSE DU MBENGUISTE (17 épisodes)");
+  console.log('   📺  Série 2 : ELLE ET MOA (4 épisodes)');
   console.log('');
   console.log('   Lancez votre app Flutter pour voir le résultat.');
   console.log('─────────────────────────────────────────────────────\n');

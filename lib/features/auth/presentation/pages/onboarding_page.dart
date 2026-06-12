@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/responsive/responsive_layout.dart';
 import '../../../../core/routes/route_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -113,41 +112,37 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
       body: DecoratedBox(
         decoration: const BoxDecoration(gradient: AppColors.bgGradient),
         child: SafeArea(
-          child: ResponsiveLayout(
-            builder: (context, responsive) => Column(
-              children: [
-                _OnboardingHeader(
-                  compact: responsive.isMobile,
-                  onSkip: _isCompleting ? null : _completeOnboarding,
-                ),
-                Expanded(
-                  child: PageView.builder(
-                    controller: _pageController,
-                    itemCount: onboardingSlides.length,
-                    onPageChanged: (index) {
-                      if (index == _currentIndex) return;
-                      setState(() => _currentIndex = index);
-                    },
-                    itemBuilder: (context, index) {
-                      return OnboardingSlideWidget(
-                        key: ValueKey('onboarding-slide-$index'),
-                        slide: onboardingSlides[index],
-                        index: index,
-                      );
-                    },
-                  ),
-                ),
-                _OnboardingControls(
-                  currentIndex: _currentIndex,
+          child: Column(
+            children: [
+              _OnboardingHeader(
+                compact: true,
+                onSkip: _isCompleting ? null : _completeOnboarding,
+              ),
+              Expanded(
+                child: PageView.builder(
+                  controller: _pageController,
                   itemCount: onboardingSlides.length,
-                  label: _ctaLabel,
-                  isCompleting: _isCompleting,
-                  desktop: responsive.isDesktop,
-                  onBack: _currentIndex == 0 ? null : _goBack,
-                  onNext: _advance,
+                  onPageChanged: (index) {
+                    if (index == _currentIndex) return;
+                    setState(() => _currentIndex = index);
+                  },
+                  itemBuilder: (context, index) {
+                    return OnboardingSlideWidget(
+                      key: ValueKey('onboarding-slide-$index'),
+                      slide: onboardingSlides[index],
+                    );
+                  },
                 ),
-              ],
-            ),
+              ),
+              _OnboardingControls(
+                currentIndex: _currentIndex,
+                itemCount: onboardingSlides.length,
+                label: _ctaLabel,
+                isCompleting: _isCompleting,
+                onBack: _currentIndex == 0 ? null : _goBack,
+                onNext: _advance,
+              ),
+            ],
           ),
         ),
       ),
@@ -210,7 +205,6 @@ class _OnboardingControls extends StatelessWidget {
     required this.itemCount,
     required this.label,
     required this.isCompleting,
-    required this.desktop,
     required this.onBack,
     required this.onNext,
   });
@@ -219,7 +213,6 @@ class _OnboardingControls extends StatelessWidget {
   final int itemCount;
   final String label;
   final bool isCompleting;
-  final bool desktop;
   final VoidCallback? onBack;
   final VoidCallback onNext;
 
@@ -236,47 +229,30 @@ class _OnboardingControls extends StatelessWidget {
     );
 
     return Container(
-      padding: EdgeInsets.fromLTRB(
-        desktop ? 48 : 18,
-        14,
-        desktop ? 48 : 18,
-        desktop ? 20 : 12,
-      ),
+      padding: EdgeInsets.fromLTRB(18, 14, 18, 12),
       decoration: BoxDecoration(
         color: AppColors.bgCinemaDark.withValues(alpha: 0.96),
         border: Border(top: BorderSide(color: AppColors.glassBorder(0.16))),
       ),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1240),
-          child: desktop
-              ? Row(
-                  children: [
-                    SizedBox(width: 330, child: progress),
-                    const Spacer(),
-                    if (onBack != null) ...[
-                      _BackButton(onPressed: onBack!),
-                      const SizedBox(width: 12),
-                    ],
-                    SizedBox(width: 310, child: button),
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              progress,
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  if (onBack != null) ...[
+                    _BackButton(onPressed: onBack!),
+                    const SizedBox(width: 11),
                   ],
-                )
-              : Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    progress,
-                    const SizedBox(height: 14),
-                    Row(
-                      children: [
-                        if (onBack != null) ...[
-                          _BackButton(onPressed: onBack!),
-                          const SizedBox(width: 11),
-                        ],
-                        Expanded(child: button),
-                      ],
-                    ),
-                  ],
-                ),
+                  Expanded(child: button),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

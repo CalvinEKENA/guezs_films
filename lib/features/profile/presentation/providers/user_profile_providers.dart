@@ -11,9 +11,9 @@ final userProfileRepositoryProvider = Provider<UserProfileRepository>((ref) {
 /// Stream of all profiles for the current user
 final userProfilesProvider =
     StreamProvider.family<List<UserProfileEntity>, String>((ref, userId) {
-  if (userId.isEmpty) return Stream.value([]);
-  return ref.watch(userProfileRepositoryProvider).watchProfiles(userId);
-});
+      if (userId.isEmpty) return Stream.value([]);
+      return ref.watch(userProfileRepositoryProvider).watchProfiles(userId);
+    });
 
 /// The currently active profile (selected at the profile selector screen)
 final activeProfileProvider = StateProvider<UserProfileEntity?>((ref) => null);
