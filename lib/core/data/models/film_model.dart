@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../content/content_presentation.dart';
 import '../../domain/entities/film_entity.dart';
+import 'video_url_field_reader.dart';
 
 class FilmModel extends FilmEntity {
   const FilmModel({
@@ -44,7 +45,7 @@ class FilmModel extends FilmEntity {
       description: canonicalContentCopy(data['description'] as String? ?? ''),
       posterUrl: data['posterUrl'] as String? ?? '',
       backdropUrl: data['backdropUrl'] as String? ?? '',
-      videoUrl: data['videoUrl'] as String? ?? '',
+      videoUrl: readVideoUrl(data),
       genres: _readStringList(data['genres']),
       year: _readInt(data['year']),
       durationMin: _readInt(data['durationMin']),

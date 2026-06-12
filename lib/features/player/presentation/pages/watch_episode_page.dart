@@ -11,6 +11,7 @@ import '../../../access/presentation/providers/watch_access_providers.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../domain/entities/player_content_request.dart';
 import '../../domain/services/mvp_playback_fallback.dart';
+import '../utils/watch_source_debug.dart';
 import '../widgets/watch_state_view.dart';
 import 'player_page.dart';
 
@@ -128,6 +129,11 @@ class WatchEpisodePage extends ConsumerWidget {
     final series = seriesAsync.value!;
     final access = accessAsync.valueOrNull;
     final directVideoUrl = episode.videoUrl.trim();
+    debugWatchSourceDecision(
+      contentId: '$seriesId/$seasonId/$episodeId',
+      access: access,
+      directVideoUrl: directVideoUrl,
+    );
     if (shouldUseDirectVideoFallback(
       access: access,
       directVideoUrl: directVideoUrl,
@@ -166,8 +172,8 @@ class WatchEpisodePage extends ConsumerWidget {
     if (playbackUrl.isEmpty) {
       return WatchStateView(
         icon: Icons.videocam_off_outlined,
-        title: 'Vidéo indisponible',
-        message: 'Cette vidéo est momentanément indisponible.',
+        title: 'Source vidéo non configurée',
+        message: 'Aucune source de lecture n’est configurée pour cet épisode.',
         primaryLabel: 'Retour à la série',
         onPrimaryPressed: () => context.go(Routes.seriesDetailsPath(seriesId)),
         secondaryLabel: 'Catalogue',

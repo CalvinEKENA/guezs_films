@@ -4,8 +4,10 @@
   "private": true,
   "description": "Admin scripts for Guezs Films premium access setup",
   "scripts": {
+    "audit:video-urls": "node audit_video_urls.js",
     "create:code": "node create_access_code.js",
     "create:rule": "node create_content_access_rule.js",
+    "normalize:video-urls": "node normalize_video_urls.js",
     "seed:demo": "node seed_access_demo.js --confirm-demo",
     "seed:free-mvp": "node seed_all_content_free_mvp.js"
   },

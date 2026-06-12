@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../content/content_presentation.dart';
 import '../../domain/entities/episode_entity.dart';
+import 'video_url_field_reader.dart';
 
 class EpisodeModel extends EpisodeEntity {
   const EpisodeModel({
@@ -39,7 +40,7 @@ class EpisodeModel extends EpisodeEntity {
       title: canonicalContentTitle(data['title'] as String? ?? ''),
       description: canonicalContentCopy(data['description'] as String? ?? ''),
       thumbnailUrl: data['thumbnailUrl'] as String? ?? '',
-      videoUrl: data['videoUrl'] as String? ?? '',
+      videoUrl: readVideoUrl(data),
       durationSec: _readInt(data['durationSec']),
       airDate: _readDateTime(data['airDate']),
       maturityRating: _readString(data['maturityRating']),

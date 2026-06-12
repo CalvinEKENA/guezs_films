@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:guezs_films/core/config/firebase_runtime_config.dart';
 import 'package:guezs_films/core/constants/app_constants.dart';
 import 'package:guezs_films/core/content/content_presentation.dart';
+import 'package:guezs_films/core/data/models/video_url_field_reader.dart';
 import 'package:guezs_films/core/domain/entities/episode_entity.dart';
 import 'package:guezs_films/core/domain/entities/film_entity.dart';
 import 'package:guezs_films/core/domain/entities/season_entity.dart';
@@ -39,6 +40,8 @@ import 'package:guezs_films/features/player/data/video_controller_factory.dart';
 import 'package:guezs_films/features/player/domain/entities/player_content_request.dart';
 import 'package:guezs_films/features/player/domain/services/mvp_playback_fallback.dart';
 import 'package:guezs_films/features/player/presentation/pages/player_page.dart';
+import 'package:guezs_films/features/player/presentation/pages/watch_episode_page.dart';
+import 'package:guezs_films/features/player/presentation/pages/watch_film_page.dart';
 import 'package:guezs_films/features/profile/domain/entities/user_profile_entity.dart';
 import 'package:guezs_films/features/profile/presentation/pages/profile_page.dart';
 import 'package:guezs_films/features/profile/presentation/pages/profile_selector_page.dart';
@@ -73,6 +76,25 @@ void main() {
   test('Search aliases preserve old Firestore tokens', () {
     expect(buildSearchQueryTokens('épouse').contains('femme'), isTrue);
     expect(buildSearchQueryTokens('ELLE ET MOA').contains('moi'), isTrue);
+  });
+
+  test('Video URL reader supports legacy field names in priority order', () {
+    expect(
+      readVideoUrl({
+        'videoUrl': ' https://example.com/canonical.m3u8 ',
+        'videoURL': 'https://example.com/legacy.mp4',
+      }),
+      'https://example.com/canonical.m3u8',
+    );
+    expect(
+      readVideoUrl({'video_url': '', 'streamUrl': ' stream-source.m3u8 '}),
+      'stream-source.m3u8',
+    );
+    expect(
+      readVideoUrl({'sourceUrl': null, 'url': 'https://example.com/final.mp4'}),
+      'https://example.com/final.mp4',
+    );
+    expect(readVideoUrl({'videoURL': 42}), isEmpty);
   });
 
   test('Responsive values stay in the universal mobile frame', () {
@@ -555,6 +577,120 @@ void main() {
     await tester.pump();
 
     expect(find.text('Vérification de l’accès'), findsOneWidget);
+  });
+
+  testWidgets('Watch film reports a missing configured video source', (
+    tester,
+  ) async {
+    final film = FilmEntity(
+      id: 'film-without-source',
+      title: 'Film sans source',
+      description: '',
+      posterUrl: '',
+      backdropUrl: '',
+      videoUrl: '',
+      genres: const [],
+      year: 2026,
+      durationMin: 90,
+      rating: 0,
+      isFeatured: false,
+      isNew: false,
+      createdAt: DateTime(2026, 6, 12),
+    );
+    final request = PlayerContentRequest.film(film.id);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authStateProvider.overrideWith(
+            (ref) => Stream.value(
+              const UserEntity(uid: 'test-user', email: 'test@example.com'),
+            ),
+          ),
+          filmDetailsProvider(film.id).overrideWith((ref) async => film),
+          watchAccessProvider(request).overrideWith(
+            (ref) async => WatchAccessResult.granted(message: 'Accès accordé.'),
+          ),
+        ],
+        child: MaterialApp(home: WatchFilmPage(filmId: film.id)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Source vidéo non configurée'), findsOneWidget);
+    expect(
+      find.text('Aucune source de lecture n’est configurée pour ce film.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('Watch episode reports a missing configured video source', (
+    tester,
+  ) async {
+    final series = SeriesEntity(
+      id: 'series-without-source',
+      title: 'Série sans source',
+      description: '',
+      posterUrl: '',
+      backdropUrl: '',
+      genres: const [],
+      year: 2026,
+      numberOfSeasons: 1,
+      isFeatured: false,
+      createdAt: DateTime(2026, 6, 12),
+    );
+    final episode = EpisodeEntity(
+      id: 'episode-without-source',
+      seriesId: series.id,
+      seasonId: 'season-1',
+      episodeNumber: 1,
+      title: 'Épisode sans source',
+      description: '',
+      thumbnailUrl: '',
+      videoUrl: '',
+      durationSec: 0,
+      airDate: DateTime(2026, 6, 12),
+    );
+    final request = PlayerContentRequest.episode(
+      seriesId: series.id,
+      seasonId: episode.seasonId,
+      episodeId: episode.id,
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authStateProvider.overrideWith(
+            (ref) => Stream.value(
+              const UserEntity(uid: 'test-user', email: 'test@example.com'),
+            ),
+          ),
+          seriesDetailsProvider(series.id).overrideWith((ref) async => series),
+          episodeDetailsProvider((
+            seriesId: series.id,
+            seasonId: episode.seasonId,
+            episodeId: episode.id,
+          )).overrideWith((ref) async => episode),
+          watchAccessProvider(request).overrideWith(
+            (ref) async => WatchAccessResult.granted(message: 'Accès accordé.'),
+          ),
+        ],
+        child: MaterialApp(
+          home: WatchEpisodePage(
+            seriesId: series.id,
+            seasonId: episode.seasonId,
+            episodeId: episode.id,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Source vidéo non configurée'), findsOneWidget);
+    expect(
+      find.text('Aucune source de lecture n’est configurée pour cet épisode.'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('Film details exposes premium conversion content', (
