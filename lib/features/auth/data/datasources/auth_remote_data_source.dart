@@ -26,8 +26,6 @@ abstract class AuthRemoteDataSource {
 
   Future<void> signOut();
 
-  Future<void> deleteAccount(AuthCredential credential);
-
   Stream<User?> get authStateChanges;
 
   User? get currentUser;
@@ -88,7 +86,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
       // Configuration de base pour Google Sign-In (Mobile)
       final GoogleSignIn googleSignIn = GoogleSignIn(
-        clientId: '682820949159-vo9talk0vd4mmkofqd5d57m55m0o0nk3.apps.googleusercontent.com',
+        clientId:
+            '682820949159-vo9talk0vd4mmkofqd5d57m55m0o0nk3.apps.googleusercontent.com',
       );
 
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
@@ -98,7 +97,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         throw CancelledException();
       }
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
 
       final OAuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
@@ -109,7 +109,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     } on CancelledException {
       rethrow;
     } on FirebaseAuthException catch (e) {
-      if (e.code == 'popup-closed-by-user' || e.code == 'cancelled-popup-request') {
+      if (e.code == 'popup-closed-by-user' ||
+          e.code == 'cancelled-popup-request') {
         throw CancelledException();
       }
       throw ServerException(AuthErrorMapper.map(e.code, e.message));
@@ -141,21 +142,22 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         nonce: nonce,
       );
 
-      final oAuthCredential = OAuthProvider('apple.com').credential(
-        idToken: appleCredential.identityToken,
-        rawNonce: rawNonce,
-      );
+      final oAuthCredential = OAuthProvider(
+        'apple.com',
+      ).credential(idToken: appleCredential.identityToken, rawNonce: rawNonce);
 
-      final userCredential =
-          await _firebaseAuth.signInWithCredential(oAuthCredential);
+      final userCredential = await _firebaseAuth.signInWithCredential(
+        oAuthCredential,
+      );
       final user = userCredential.user;
 
       // Apple n'envoie le nom qu'à la première connexion — on l'enregistre si absent
       if (user != null &&
           (user.displayName == null || user.displayName!.isEmpty)) {
-        final name = [appleCredential.givenName, appleCredential.familyName]
-            .where((s) => s != null && s.isNotEmpty)
-            .join(' ');
+        final name = [
+          appleCredential.givenName,
+          appleCredential.familyName,
+        ].where((s) => s != null && s.isNotEmpty).join(' ');
         if (name.isNotEmpty) {
           await user.updateDisplayName(name);
         }
@@ -163,7 +165,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
       return userCredential;
     } on FirebaseAuthException catch (e) {
-      if (e.code == 'popup-closed-by-user' || e.code == 'cancelled-popup-request') {
+      if (e.code == 'popup-closed-by-user' ||
+          e.code == 'cancelled-popup-request') {
         throw CancelledException();
       }
       throw ServerException(AuthErrorMapper.map(e.code, e.message));
@@ -198,20 +201,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<void> signOut() async {
     await _firebaseAuth.signOut();
-  }
-
-  @override
-  Future<void> deleteAccount(AuthCredential credential) async {
-    try {
-      final user = _firebaseAuth.currentUser;
-      if (user == null) throw ServerException('Aucun utilisateur authentifié');
-      await user.reauthenticateWithCredential(credential);
-      await user.delete();
-    } on FirebaseAuthException catch (e) {
-      throw ServerException(AuthErrorMapper.map(e.code, e.message));
-    } catch (e) {
-      throw ServerException(e.toString());
-    }
   }
 
   @override

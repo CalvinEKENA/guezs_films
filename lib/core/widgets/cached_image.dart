@@ -35,38 +35,20 @@ class CachedImage extends StatelessWidget {
       return _buildError();
     }
 
-    String path = imageUrl!;
+    var path = imageUrl!.trim();
 
-    // Normalization for Web Assets (Handles spaces and specific content like "Elle et Moi")
-    final lowPath = path.toLowerCase();
-
-    // Priority 1: Check if this is a known "Elle et Moi" content piece
-    // If so, and we are not explicitly forced to network, we try to use the local asset
-    if (lowPath.contains('elle et moi') || lowPath.contains('elle_et_moi')) {
-      // Extract filename
-      final fileName = path
-          .split('/')
-          .last
-          .replaceAll('%20', '_')
-          .replaceAll(' ', '_');
-      // Force local asset path for these specific premium assets
-      final assetPath = 'assets/images/$fileName';
-
-      return _buildAssetImage(assetPath);
-    }
-
-    // Priority 2: Standard Asset vs Network Detection
     if (!path.startsWith('http')) {
-      // Local asset
       if (!path.startsWith('assets/')) {
         path = 'assets/$path';
       }
-      // Clean up spaces for Web compatibility
       path = path.replaceAll(' ', '_');
       return _buildAssetImage(path);
     }
 
-    // Priority 3: Network Image
+    final pixelRatio = MediaQuery.devicePixelRatioOf(context);
+    final cacheWidth = _cacheDimension(width, pixelRatio);
+    final cacheHeight = _cacheDimension(height, pixelRatio);
+
     return ClipRRect(
       borderRadius: borderRadius ?? BorderRadius.circular(8),
       child: CachedNetworkImage(
@@ -75,6 +57,10 @@ class CachedImage extends StatelessWidget {
         height: height,
         fit: fit,
         alignment: alignment,
+        memCacheWidth: cacheWidth,
+        memCacheHeight: cacheHeight,
+        maxWidthDiskCache: cacheWidth,
+        maxHeightDiskCache: cacheHeight,
         placeholder: (context, url) => placeholder ?? _buildPlaceholder(),
         errorWidget: (context, url, error) => errorWidget ?? _buildError(),
       ),
@@ -141,92 +127,11 @@ class CachedImage extends StatelessWidget {
       ),
     );
   }
-}
 
-/// Movie poster with automatic aspect ratio
-class MoviePoster extends StatelessWidget {
-  final String? posterUrl;
-  final double width;
-  final BorderRadius? borderRadius;
-  final VoidCallback? onTap;
-  final bool showShadow;
-  final Alignment alignment;
-
-  const MoviePoster({
-    super.key,
-    required this.posterUrl,
-    this.width = 120,
-    this.borderRadius,
-    this.onTap,
-    this.showShadow = true,
-    this.alignment = Alignment.center,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: width,
-        height: width * 1.5,
-        decoration: BoxDecoration(
-          borderRadius: borderRadius ?? BorderRadius.circular(8),
-          boxShadow: showShadow
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.42),
-                    blurRadius: 10,
-                    offset: const Offset(0, 5),
-                  ),
-                  BoxShadow(
-                    color: AppColors.spotlightBlue.withValues(alpha: 0.06),
-                    blurRadius: 18,
-                    offset: const Offset(0, 8),
-                  ),
-                ]
-              : null,
-        ),
-        child: CachedImage(
-          imageUrl: posterUrl,
-          width: width,
-          height: width * 1.5,
-          borderRadius: borderRadius ?? BorderRadius.circular(8),
-          alignment: alignment,
-        ),
-      ),
-    );
-  }
-}
-
-/// Backdrop image with automatic aspect ratio
-class BackdropImage extends StatelessWidget {
-  final String? backdropUrl;
-  final double? width;
-  final double? height;
-  final BorderRadius? borderRadius;
-  final Widget? overlay;
-
-  const BackdropImage({
-    super.key,
-    required this.backdropUrl,
-    this.width,
-    this.height,
-    this.borderRadius,
-    this.overlay,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        CachedImage(
-          imageUrl: backdropUrl,
-          width: width ?? double.infinity,
-          height: height ?? (width != null ? width! * 9 / 16 : 200),
-          borderRadius: borderRadius ?? BorderRadius.zero,
-        ),
-        if (overlay != null) Positioned.fill(child: overlay!),
-      ],
-    );
+  int? _cacheDimension(double? logicalSize, double pixelRatio) {
+    if (logicalSize == null || !logicalSize.isFinite || logicalSize <= 0) {
+      return null;
+    }
+    return (logicalSize * pixelRatio).round().clamp(1, 4096).toInt();
   }
 }

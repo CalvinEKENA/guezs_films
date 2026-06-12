@@ -256,52 +256,65 @@ class _BottomNavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 260),
-              curve: Curves.easeOutCubic,
-              width: isActive ? 24 : 0,
-              height: 2.5,
-              margin: const EdgeInsets.only(bottom: 6),
-              decoration: BoxDecoration(
-                color: AppColors.accentSoft,
-                borderRadius: BorderRadius.circular(2),
-                boxShadow: isActive
-                    ? [
-                        BoxShadow(
-                          color: AppColors.accentSoft.withValues(alpha: 0.45),
-                          blurRadius: 6,
-                        ),
-                      ]
-                    : null,
-              ),
+    return Semantics(
+      button: true,
+      selected: isActive,
+      label: destination.label,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 260),
+                  curve: Curves.easeOutCubic,
+                  width: isActive ? 24 : 0,
+                  height: 2.5,
+                  margin: const EdgeInsets.only(bottom: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.accentSoft,
+                    borderRadius: BorderRadius.circular(2),
+                    boxShadow: isActive
+                        ? [
+                            BoxShadow(
+                              color: AppColors.accentSoft.withValues(
+                                alpha: 0.45,
+                              ),
+                              blurRadius: 6,
+                            ),
+                          ]
+                        : null,
+                  ),
+                ),
+                Icon(
+                  isActive ? destination.activeIcon : destination.icon,
+                  color: isActive
+                      ? AppColors.accentSoft
+                      : AppColors.textTertiary,
+                  size: 23,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  destination.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.overline.copyWith(
+                    fontSize: 10,
+                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                    color: isActive
+                        ? AppColors.accentSoft
+                        : AppColors.textTertiary,
+                  ),
+                ),
+              ],
             ),
-            Icon(
-              isActive ? destination.activeIcon : destination.icon,
-              color: isActive ? AppColors.accentSoft : AppColors.textTertiary,
-              size: 23,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              destination.label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTextStyles.overline.copyWith(
-                fontSize: 10,
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                color: isActive ? AppColors.accentSoft : AppColors.textTertiary,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -332,71 +345,79 @@ class _SideNavItemState extends State<_SideNavItem> {
   Widget build(BuildContext context) {
     final highlighted = widget.isActive || _hovered;
 
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        behavior: HitTestBehavior.opaque,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: EdgeInsets.symmetric(
-            horizontal: widget.extended ? 14 : 0,
-            vertical: 12,
-          ),
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: widget.isActive
-                ? AppColors.accent.withValues(alpha: 0.14)
-                : (_hovered
-                      ? AppColors.glassBackground(0.22)
-                      : Colors.transparent),
+    return Semantics(
+      button: true,
+      selected: widget.isActive,
+      label: widget.destination.label,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: widget.onTap,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: widget.isActive
-                  ? AppColors.glassBorder(0.42)
-                  : Colors.transparent,
-              width: 0.8,
-            ),
-          ),
-          child: widget.extended
-              ? Row(
-                  children: [
-                    Icon(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: EdgeInsets.symmetric(
+                horizontal: widget.extended ? 14 : 0,
+                vertical: 12,
+              ),
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: widget.isActive
+                    ? AppColors.accent.withValues(alpha: 0.14)
+                    : (_hovered
+                          ? AppColors.glassBackground(0.22)
+                          : Colors.transparent),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: widget.isActive
+                      ? AppColors.glassBorder(0.42)
+                      : Colors.transparent,
+                  width: 0.8,
+                ),
+              ),
+              child: widget.extended
+                  ? Row(
+                      children: [
+                        Icon(
+                          widget.isActive
+                              ? widget.destination.activeIcon
+                              : widget.destination.icon,
+                          color: highlighted
+                              ? AppColors.accentSoft
+                              : AppColors.textTertiary,
+                          size: 21,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            widget.destination.label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.labelLarge.copyWith(
+                              color: highlighted
+                                  ? AppColors.textPrimary
+                                  : AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+                  : Icon(
                       widget.isActive
                           ? widget.destination.activeIcon
                           : widget.destination.icon,
                       color: highlighted
                           ? AppColors.accentSoft
                           : AppColors.textTertiary,
-                      size: 21,
+                      size: 22,
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        widget.destination.label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTextStyles.labelLarge.copyWith(
-                          color: highlighted
-                              ? AppColors.textPrimary
-                              : AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
-                  ],
-                )
-              : Icon(
-                  widget.isActive
-                      ? widget.destination.activeIcon
-                      : widget.destination.icon,
-                  color: highlighted
-                      ? AppColors.accentSoft
-                      : AppColors.textTertiary,
-                  size: 22,
-                ),
+            ),
+          ),
         ),
       ),
     );

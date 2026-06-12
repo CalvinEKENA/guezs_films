@@ -50,7 +50,7 @@ Crée des données de démonstration marquées `demo: true`.
 Exemple:
 
 ```powershell
-node scripts/admin/seed_access_demo.js
+node scripts/admin/seed_access_demo.js --confirm-demo
 ```
 
 ## Règles Firestore vérifiées

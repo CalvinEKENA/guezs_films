@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,6 +19,7 @@ import 'package:guezs_films/features/player/presentation/pages/watch_episode_pag
 import 'package:guezs_films/features/player/presentation/pages/watch_film_page.dart';
 import 'package:guezs_films/features/series/presentation/pages/series_details_page.dart';
 import 'package:guezs_films/core/widgets/main_scaffold.dart';
+import 'package:guezs_films/core/widgets/premium_states.dart';
 import 'package:guezs_films/core/routes/route_constants.dart';
 import 'package:guezs_films/core/theme/app_colors.dart';
 import 'package:guezs_films/features/profile/presentation/pages/profile_selector_page.dart';
@@ -40,7 +42,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     navigatorKey: AppRouter.rootNavigatorKey,
     initialLocation: Routes.splash,
-    debugLogDiagnostics: true,
+    debugLogDiagnostics: kDebugMode,
     refreshListenable: authStateNotifier,
     redirect: (context, state) {
       final authState = authStateNotifier.value;
@@ -279,27 +281,15 @@ class AppRouter {
 
   static Widget errorBuilder(BuildContext context, GoRouterState state) =>
       Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 64, color: AppColors.error),
-              const SizedBox(height: 16),
-              Text(
-                'Page not found',
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                state.uri.toString(),
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () => context.go(Routes.home),
-                child: const Text('Go Home'),
-              ),
-            ],
+        backgroundColor: AppColors.background,
+        body: SafeArea(
+          child: PremiumEmptyState(
+            icon: Icons.explore_off_rounded,
+            title: 'Cette page n’est pas disponible',
+            message:
+                'Le lien est peut-être incomplet ou le contenu a été déplacé.',
+            actionLabel: 'Retour à l’accueil',
+            onAction: () => context.go(Routes.home),
           ),
         ),
       );

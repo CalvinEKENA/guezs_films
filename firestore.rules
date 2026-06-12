@@ -19,6 +19,25 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    // Fields that a client may manage on its own public profile document.
+    // Billing, premium and role fields remain server/admin controlled.
+    function hasOnlyClientProfileFields() {
+      return request.resource.data.keys().hasOnly([
+        'displayName',
+        'photoUrl',
+        'createdAt',
+        'updatedAt'
+      ]);
+    }
+
+    function changesOnlyClientProfileFields() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        'displayName',
+        'photoUrl',
+        'updatedAt'
+      ]);
+    }
+
     // ─── Catalog (Public contents) ───────────────────────────────────────────
     
     // Films: Everyone can read, only admin can manage
@@ -46,8 +65,12 @@ service cloud.firestore {
     // ─── User Personal Data (Sync features) ──────────────────────────────────
     
     match /users/{userId} {
-      // User can manage their profile, admin can too
-      allow read, write: if isOwner(userId) || isAdmin();
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAdmin() ||
+        (isOwner(userId) && hasOnlyClientProfileFields());
+      allow update: if isAdmin() ||
+        (isOwner(userId) && changesOnlyClientProfileFields());
+      allow delete: if isOwner(userId) || isAdmin();
 
       // Cloud Favorites Synchronization
       match /favorites/{favId} {

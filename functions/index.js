@@ -7,28 +7,45 @@ const db = admin.firestore();
 const fieldValue = admin.firestore.FieldValue;
 
 /**
- * Génère les tokens de recherche à partir d'un titre.
- * Chaque mot est décomposé en tous ses préfixes (min 2 chars).
- * Ex: "Black Panther" → ["bl","bla","blac","black","pa","pan","pant","panther","black panther"]
+ * Génère des tokens à partir du titre et des métadonnées optionnelles.
+ * Les variantes accentuées et sans accents restent indexées pour préserver les
+ * anciennes recherches et préparer réalisateur, casting, pays, langue et tags.
  */
-function generateSearchTokens(title) {
-  if (!title || typeof title !== 'string') return [];
+function generateSearchTokens(data) {
   const tokens = new Set();
-  const normalized = title.toLowerCase().trim();
-  const words = normalized.split(/\s+/);
+  const values = [
+    data.title,
+    data.director,
+    data.country,
+    data.language,
+    ...(Array.isArray(data.cast) ? data.cast : []),
+    ...(Array.isArray(data.tags) ? data.tags : []),
+  ];
 
-  for (const word of words) {
-    if (word.length < 2) continue;
-    for (let i = 2; i <= word.length; i++) {
-      tokens.add(word.substring(0, i));
+  for (const value of values) {
+    if (!value || typeof value !== 'string') continue;
+    const raw = value.toLowerCase().trim().replace(/\s+/g, ' ');
+    const folded = raw
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    for (const normalized of new Set([raw, folded])) {
+      if (normalized.length < 2) continue;
+      tokens.add(normalized);
+
+      for (const word of normalized.split(/\s+/)) {
+        if (word.length < 2) continue;
+        for (let i = 2; i <= word.length; i++) {
+          tokens.add(word.substring(0, i));
+        }
+      }
     }
-    tokens.add(word);
   }
 
-  // Ajouter le titre complet normalisé
-  tokens.add(normalized);
-
-  return Array.from(tokens);
+  return Array.from(tokens).slice(0, 400);
 }
 
 function normalizeAccessCode(code) {
@@ -139,11 +156,25 @@ function denied(status, message) {
   return { allowed: false, status, message };
 }
 
+async function deleteQueryDocuments(query) {
+  while (true) {
+    const snapshot = await query.limit(400).get();
+    if (snapshot.empty) return;
+
+    const batch = db.batch();
+    for (const doc of snapshot.docs) {
+      batch.delete(doc.ref);
+    }
+    await batch.commit();
+  }
+}
+
 async function evaluateWatchAccess(uid, request) {
   if (!uid) {
     return denied('guest', 'Connectez-vous pour demander un accès vidéo.');
   }
 
+  const now = new Date();
   const ruleRefs = ruleIdsForRequest(request).map((id) =>
     db.collection('content_access_rules').doc(id)
   );
@@ -151,7 +182,7 @@ async function evaluateWatchAccess(uid, request) {
   const freeRule = ruleSnapshots.find((snapshot) => {
     if (!snapshot.exists) return false;
     const data = snapshot.data() || {};
-    return data.active !== false && data.accessMode === 'free';
+    return data.accessMode === 'free' && isWithinWindow(data, now);
   });
 
   if (freeRule) {
@@ -168,7 +199,6 @@ async function evaluateWatchAccess(uid, request) {
     .where('active', '==', true)
     .get();
 
-  const now = new Date();
   for (const doc of entitlements.docs) {
     const data = doc.data() || {};
     if (!isWithinWindow(data, now)) continue;
@@ -295,6 +325,41 @@ exports.getSignedVideoUrl = functions.https.onCall(async () => {
   };
 });
 
+exports.deleteMyAccount = functions.https.onCall(async (_, context) => {
+  const uid = context.auth && context.auth.uid;
+  if (!uid) {
+    throw new functions.https.HttpsError(
+      'unauthenticated',
+      'Une connexion est requise.',
+    );
+  }
+
+  const authTimeSeconds = Number(context.auth.token.auth_time || 0);
+  const authAgeMs = Date.now() - authTimeSeconds * 1000;
+  if (!authTimeSeconds || authAgeMs > 10 * 60 * 1000) {
+    throw new functions.https.HttpsError(
+      'failed-precondition',
+      'Reconnectez-vous avant de supprimer votre compte.',
+    );
+  }
+
+  await db.recursiveDelete(db.collection('users').doc(uid));
+  await deleteQueryDocuments(
+    db.collection('user_entitlements').where('uid', '==', uid),
+  );
+  await deleteQueryDocuments(
+    db.collection('watch_sessions').where('uid', '==', uid),
+  );
+
+  try {
+    await admin.auth().deleteUser(uid);
+  } catch (error) {
+    if (error.code !== 'auth/user-not-found') throw error;
+  }
+
+  return { deleted: true };
+});
+
 /**
  * Déclencheur Firestore : génère searchTokens sur write de films
  */
@@ -305,7 +370,7 @@ exports.generateFilmSearchTokens = functions.firestore
     const data = change.after.data();
     if (!data || !data.title) return null;
 
-    const tokens = generateSearchTokens(data.title);
+    const tokens = generateSearchTokens(data);
 
     // Éviter une boucle infinie : ne mettre à jour que si les tokens ont changé
     const existing = (data.searchTokens || []).slice().sort().join(',');
@@ -325,7 +390,7 @@ exports.generateSeriesSearchTokens = functions.firestore
     const data = change.after.data();
     if (!data || !data.title) return null;
 
-    const tokens = generateSearchTokens(data.title);
+    const tokens = generateSearchTokens(data);
 
     const existing = (data.searchTokens || []).slice().sort().join(',');
     const computed = tokens.slice().sort().join(',');

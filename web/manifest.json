@@ -1,12 +1,14 @@
 {
-    "name": "guezs_films",
-    "short_name": "guezs_films",
+    "name": "GUEZS FILMS",
+    "short_name": "GUEZS",
     "start_url": ".",
+    "scope": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
+    "background_color": "#030914",
+    "theme_color": "#003366",
+    "description": "Une expérience cinéma premium dédiée aux films et séries.",
+    "lang": "fr",
+    "categories": ["entertainment", "video"],
     "prefer_related_applications": false,
     "icons": [
         {

@@ -1,5 +1,6 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -7,11 +8,12 @@ import '../../../../core/providers/content_providers.dart';
 import '../../../../core/responsive/responsive_layout.dart';
 import '../../../../core/responsive/responsive_values.dart';
 import '../../../../core/routes/route_constants.dart';
-import '../../domain/entities/favorite_movie.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_text_styles.dart';
-import '../../../../core/widgets/cached_image.dart';
+import '../../../../core/widgets/premium_content_card.dart';
+import '../../../../core/widgets/premium_feedback.dart';
+import '../../../../core/widgets/premium_states.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
+import '../../domain/entities/favorite_movie.dart';
 import '../providers/favorites_providers.dart';
 
 class FavoritesPage extends ConsumerWidget {
@@ -23,75 +25,60 @@ class FavoritesPage extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: Text(
-          'Ma Liste',
-          style: AppTextStyles.headlineMedium.copyWith(
-            color: AppColors.textPrimary,
-          ),
-        ),
-      ),
-      body: ResponsiveLayout(
-        builder: (context, responsive) => favoritesState.when(
-          data: (favorites) {
-            if (favorites.isEmpty) return _buildEmptyState(responsive);
-            return _buildFavoritesGrid(context, ref, favorites, responsive);
-          },
-          loading: () => Padding(
-            padding: EdgeInsets.all(responsive.pagePadding),
-            child: ShimmerGrid(
-              itemCount: responsive.posterColumns * 3,
-              crossAxisCount: responsive.posterColumns,
-              spacing: responsive.gridGap,
-              padding: EdgeInsets.zero,
-            ),
-          ),
-          error: (error, stackTrace) => Center(
-            child: Padding(
-              padding: EdgeInsets.all(responsive.pagePadding),
-              child: Text(
-                'Erreur lors du chargement de vos favoris.',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.error,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(ResponsiveValues responsive) {
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.all(responsive.pagePadding),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+      body: SafeArea(
+        child: ResponsiveLayout(
+          builder: (context, responsive) => Column(
             children: [
-              Icon(
-                Icons.bookmark_border_rounded,
-                size: 80,
-                color: AppColors.textTertiary,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Votre liste est vide',
-                style: AppTextStyles.titleMedium.copyWith(
-                  color: AppColors.textPrimary,
+              ResponsivePage(
+                padding: EdgeInsets.fromLTRB(
+                  responsive.pagePadding,
+                  responsive.isDesktop ? 28 : 18,
+                  responsive.pagePadding,
+                  18,
+                ),
+                child: PremiumPageHeader(
+                  title: 'Ma liste',
+                  subtitle:
+                      'Votre sélection personnelle de films et de séries.',
+                  trailing: favoritesState.valueOrNull?.isNotEmpty == true
+                      ? _CountBadge(count: favoritesState.valueOrNull!.length)
+                      : null,
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                'Ajoutez des films et séries pour les retrouver ici.',
-                textAlign: TextAlign.center,
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.textSecondary,
+              Expanded(
+                child: favoritesState.when(
+                  data: (favorites) {
+                    if (favorites.isEmpty) {
+                      return PremiumEmptyState(
+                        icon: Icons.chair_alt_rounded,
+                        title: 'Votre fauteuil VIP vous attend',
+                        message:
+                            'Ajoutez vos films et séries favoris pour composer une programmation rien qu’à vous.',
+                        actionLabel: 'Explorer le catalogue',
+                        onAction: () => context.go(Routes.search),
+                      );
+                    }
+                    return _FavoritesGrid(
+                      favorites: favorites,
+                      responsive: responsive,
+                    );
+                  },
+                  loading: () => ResponsivePage(
+                    padding: EdgeInsets.all(responsive.pagePadding),
+                    child: ShimmerGrid(
+                      itemCount: responsive.posterColumns * 2,
+                      crossAxisCount: responsive.posterColumns,
+                      spacing: responsive.gridGap,
+                      padding: EdgeInsets.zero,
+                    ),
+                  ),
+                  error: (_, _) => PremiumErrorState(
+                    title: 'Votre liste est indisponible',
+                    message:
+                        'Impossible de charger vos favoris. Vos contenus ne sont pas perdus.',
+                    onRetry: () =>
+                        ref.read(favoritesProvider.notifier).loadFavorites(),
+                  ),
                 ),
               ),
             ],
@@ -100,171 +87,149 @@ class FavoritesPage extends ConsumerWidget {
       ),
     );
   }
+}
 
-  Widget _buildFavoritesGrid(
+class _FavoritesGrid extends ConsumerWidget {
+  const _FavoritesGrid({required this.favorites, required this.responsive});
+
+  final List<FavoriteMovie> favorites;
+  final ResponsiveValues responsive;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ResponsivePage(
+      padding: EdgeInsets.fromLTRB(
+        responsive.pagePadding,
+        0,
+        responsive.pagePadding,
+        responsive.pagePadding,
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final columns = responsive.posterColumns;
+          final cardWidth =
+              (constraints.maxWidth - (responsive.gridGap * (columns - 1))) /
+              columns;
+
+          return GridView.builder(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: columns,
+              mainAxisExtent: cardWidth * 1.5 + 64,
+              crossAxisSpacing: responsive.gridGap,
+              mainAxisSpacing: responsive.gridGap + 8,
+            ),
+            itemCount: favorites.length,
+            itemBuilder: (context, index) {
+              final favorite = favorites[index];
+              return _FavoriteContentCard(
+                favorite: favorite,
+                width: cardWidth,
+                onOpen: () {
+                  context.push(
+                    favorite.contentType == 'series'
+                        ? Routes.seriesDetailsPath(favorite.id)
+                        : Routes.filmDetailsPath(favorite.id),
+                  );
+                },
+                onRemove: () => _removeFavorite(context, ref, favorite),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _removeFavorite(
     BuildContext context,
     WidgetRef ref,
-    List<FavoriteMovie> favorites,
-    ResponsiveValues responsive,
-  ) {
-    return GridView.builder(
-      padding: EdgeInsets.all(responsive.pagePadding),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: responsive.posterColumns,
-        childAspectRatio: 0.58,
-        crossAxisSpacing: responsive.gridGap,
-        mainAxisSpacing: responsive.gridGap,
-      ),
-      itemCount: favorites.length,
-      itemBuilder: (context, index) {
-        final favorite = favorites[index];
-        final targetRoute = favorite.contentType == 'series'
-            ? Routes.seriesDetailsPath(favorite.id)
-            : Routes.filmDetailsPath(favorite.id);
+    FavoriteMovie favorite,
+  ) async {
+    await ref.read(favoritesProvider.notifier).toggleFavorite(favorite);
+    if (!context.mounted) return;
 
-        return _FavoriteCard(
-              favorite: favorite,
-              onTap: () => context.push(targetRoute),
-              onRemove: () =>
-                  ref.read(favoritesProvider.notifier).toggleFavorite(favorite),
-            )
-            .animate()
-            .fadeIn(delay: (index * 35).ms)
-            .scale(begin: const Offset(0.97, 0.97));
+    showPremiumSnackBar(
+      context,
+      message: '“${favorite.title}” a été retiré de votre liste.',
+      tone: PremiumFeedbackTone.success,
+      actionLabel: 'Annuler',
+      onAction: () {
+        unawaited(
+          ref.read(favoritesProvider.notifier).toggleFavorite(favorite),
+        );
       },
     );
   }
 }
 
-class _FavoriteCard extends StatelessWidget {
-  const _FavoriteCard({
+class _FavoriteContentCard extends ConsumerWidget {
+  const _FavoriteContentCard({
     required this.favorite,
-    required this.onTap,
+    required this.width,
+    required this.onOpen,
     required this.onRemove,
   });
 
   final FavoriteMovie favorite;
-  final VoidCallback onTap;
+  final double width;
+  final VoidCallback onOpen;
   final VoidCallback onRemove;
 
   @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Stack(
-                children: [
-                  Positioned.fill(child: _FavoritePoster(favorite: favorite)),
-                  Positioned(
-                    top: 8,
-                    left: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.background.withValues(alpha: 0.82),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        favorite.contentType == 'series' ? 'Série' : 'Film',
-                        style: AppTextStyles.caption.copyWith(
-                          color: AppColors.accent,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: 4,
-                    right: 4,
-                    child: GestureDetector(
-                      onTap: onRemove,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.45),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.close_rounded,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              favorite.title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: AppTextStyles.labelMedium.copyWith(
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ],
-        ),
-      ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    var posterUrl = favorite.posterPath;
+    if (posterUrl.isEmpty) {
+      if (favorite.contentType == 'series') {
+        posterUrl =
+            ref
+                .watch(seriesDetailsProvider(favorite.id))
+                .valueOrNull
+                ?.posterUrl ??
+            '';
+      } else {
+        posterUrl =
+            ref
+                .watch(filmDetailsProvider(favorite.id))
+                .valueOrNull
+                ?.posterUrl ??
+            '';
+      }
+    }
+
+    return PremiumContentCard(
+      title: favorite.title,
+      imageUrl: posterUrl,
+      metadata: favorite.contentType == 'series' ? 'Série' : 'Film',
+      badge: 'Dans ma liste',
+      width: width,
+      isFavorite: true,
+      onFavoriteTap: onRemove,
+      onTap: onOpen,
     );
   }
 }
 
-/// Affiche le poster du favori.
-/// Si posterPath est vide, fetche le posterUrl actuel depuis Firestore.
-class _FavoritePoster extends ConsumerWidget {
-  const _FavoritePoster({required this.favorite});
+class _CountBadge extends StatelessWidget {
+  const _CountBadge({required this.count});
 
-  final FavoriteMovie favorite;
+  final int count;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    if (favorite.posterPath.isNotEmpty) {
-      return CachedImage(
-        imageUrl: favorite.posterPath,
-        borderRadius: BorderRadius.circular(8),
-      );
-    }
-
-    if (favorite.contentType == 'series') {
-      final seriesAsync = ref.watch(seriesDetailsProvider(favorite.id));
-      return seriesAsync.when(
-        data: (series) => CachedImage(
-          imageUrl: series.posterUrl,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        loading: () => ShimmerLoading(
-          width: double.infinity,
-          height: double.infinity,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        error: (err, stack) =>
-            CachedImage(imageUrl: null, borderRadius: BorderRadius.circular(8)),
-      );
-    }
-
-    final filmAsync = ref.watch(filmDetailsProvider(favorite.id));
-    return filmAsync.when(
-      data: (film) => CachedImage(
-        imageUrl: film.posterUrl,
-        borderRadius: BorderRadius.circular(8),
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(
+        color: AppColors.brandBlue.withValues(alpha: 0.52),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AppColors.glassBorder(0.36)),
       ),
-      loading: () => ShimmerLoading(
-        width: double.infinity,
-        height: double.infinity,
-        borderRadius: BorderRadius.circular(8),
+      child: Text(
+        '$count titre${count > 1 ? 's' : ''}',
+        style: Theme.of(
+          context,
+        ).textTheme.labelMedium?.copyWith(color: AppColors.brandGoldLight),
       ),
-      error: (err, stack) =>
-          CachedImage(imageUrl: null, borderRadius: BorderRadius.circular(8)),
     );
   }
 }

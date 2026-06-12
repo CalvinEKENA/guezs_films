@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/premium_feedback.dart';
 import '../../domain/entities/user_profile_entity.dart';
 import '../providers/user_profile_providers.dart';
 
@@ -51,11 +52,10 @@ class _ProfileFormSheetState extends ConsumerState<ProfileFormSheet> {
   Future<void> _submit() async {
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez entrer un nom de profil.'),
-          backgroundColor: AppColors.error,
-        ),
+      showPremiumSnackBar(
+        context,
+        message: 'Entrez un nom pour continuer.',
+        tone: PremiumFeedbackTone.warning,
       );
       return;
     }
@@ -82,20 +82,21 @@ class _ProfileFormSheetState extends ConsumerState<ProfileFormSheet> {
           colorIndex: _colorIndex,
           isKids: _isKids,
         );
-        widget.onSaved(widget.existing!.copyWith(
-          name: name,
-          emoji: _emoji,
-          colorIndex: _colorIndex,
-          isKids: _isKids,
-        ));
+        widget.onSaved(
+          widget.existing!.copyWith(
+            name: name,
+            emoji: _emoji,
+            colorIndex: _colorIndex,
+            isKids: _isKids,
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: Impossible de sauvegarder le profil.'),
-            backgroundColor: AppColors.error,
-          ),
+        showPremiumSnackBar(
+          context,
+          message: 'Le profil n’a pas pu être enregistré.',
+          tone: PremiumFeedbackTone.error,
         );
       }
     } finally {
@@ -108,7 +109,9 @@ class _ProfileFormSheetState extends ConsumerState<ProfileFormSheet> {
     final isEditing = widget.existing != null;
 
     return Container(
-      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.9),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.9,
+      ),
       decoration: const BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -134,10 +137,14 @@ class _ProfileFormSheetState extends ConsumerState<ProfileFormSheet> {
                 children: [
                   Text(
                     isEditing ? 'Modifier le profil' : 'Créer un profil',
-                    style: AppTextStyles.titleLarge.copyWith(color: AppColors.textPrimary),
+                    style: AppTextStyles.titleLarge.copyWith(
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                   if (_isLoading)
-                    const CupertinoActivityIndicator(color: AppColors.accentSoft)
+                    const CupertinoActivityIndicator(
+                      color: AppColors.accentSoft,
+                    )
                   else
                     CupertinoButton(
                       padding: EdgeInsets.zero,
@@ -145,8 +152,8 @@ class _ProfileFormSheetState extends ConsumerState<ProfileFormSheet> {
                       child: Text(
                         'Enregistrer',
                         style: AppTextStyles.titleSmall.copyWith(
-                          color: _nameCtrl.text.trim().isEmpty 
-                              ? AppColors.textTertiary 
+                          color: _nameCtrl.text.trim().isEmpty
+                              ? AppColors.textTertiary
                               : AppColors.primary,
                         ),
                       ),
@@ -170,9 +177,11 @@ class _ProfileFormSheetState extends ConsumerState<ProfileFormSheet> {
                           color: AppColors.accentSoft.withValues(alpha: 0.4),
                           width: 1.5,
                         ),
-                        image: _emoji.startsWith('assets/') || _emoji.startsWith('http')
+                        image:
+                            _emoji.startsWith('assets/') ||
+                                _emoji.startsWith('http')
                             ? DecorationImage(
-                                image: _emoji.startsWith('http') 
+                                image: _emoji.startsWith('http')
                                     ? NetworkImage(_emoji) as ImageProvider
                                     : AssetImage(_emoji),
                                 fit: BoxFit.cover,
@@ -180,7 +189,9 @@ class _ProfileFormSheetState extends ConsumerState<ProfileFormSheet> {
                             : null,
                       ),
                       child: Center(
-                        child: (!_emoji.startsWith('assets/') && !_emoji.startsWith('http'))
+                        child:
+                            (!_emoji.startsWith('assets/') &&
+                                !_emoji.startsWith('http'))
                             ? Text(_emoji, style: const TextStyle(fontSize: 48))
                             : const SizedBox.shrink(),
                       ),
@@ -190,7 +201,9 @@ class _ProfileFormSheetState extends ConsumerState<ProfileFormSheet> {
                   CupertinoTextField(
                     controller: _nameCtrl,
                     placeholder: 'Nom du profil',
-                    placeholderStyle: const TextStyle(color: AppColors.textTertiary),
+                    placeholderStyle: const TextStyle(
+                      color: AppColors.textTertiary,
+                    ),
                     style: const TextStyle(color: AppColors.textPrimary),
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -205,25 +218,40 @@ class _ProfileFormSheetState extends ConsumerState<ProfileFormSheet> {
                   Wrap(
                     spacing: 12,
                     runSpacing: 12,
-                    children: List.generate(UserProfileEntity.colorOptions.length, (idx) {
-                      final c = UserProfileEntity.colorOptions[idx];
-                      final isSel = idx == _colorIndex;
-                      return GestureDetector(
-                        onTap: () => setState(() => _colorIndex = idx),
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: c,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isSel ? Colors.white : Colors.transparent,
-                              width: 3,
+                    children: List.generate(
+                      UserProfileEntity.colorOptions.length,
+                      (idx) {
+                        final c = UserProfileEntity.colorOptions[idx];
+                        final isSel = idx == _colorIndex;
+                        return Semantics(
+                          button: true,
+                          selected: isSel,
+                          label: 'Couleur ${idx + 1}',
+                          child: Material(
+                            color: Colors.transparent,
+                            shape: const CircleBorder(),
+                            child: InkWell(
+                              onTap: () => setState(() => _colorIndex = idx),
+                              customBorder: const CircleBorder(),
+                              child: Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: c,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: isSel
+                                        ? Colors.white
+                                        : Colors.transparent,
+                                    width: 3,
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      );
-                    }),
+                        );
+                      },
+                    ),
                   ),
                   const SizedBox(height: 24),
                   Text('Avatar', style: AppTextStyles.labelLarge),
@@ -233,28 +261,59 @@ class _ProfileFormSheetState extends ConsumerState<ProfileFormSheet> {
                     runSpacing: 12,
                     children: UserProfileEntity.emojiOptions.map((e) {
                       final isSel = e == _emoji;
-                      return GestureDetector(
-                        onTap: () => setState(() => _emoji = e),
-                        child: Container(
-                          width: 52,
-                          height: 52,
-                          decoration: BoxDecoration(
-                            color: AppColors.background.withValues(alpha: 0.5),
+                      final avatarIndex =
+                          UserProfileEntity.emojiOptions.indexOf(e) + 1;
+                      return Semantics(
+                        button: true,
+                        selected: isSel,
+                        label: 'Avatar $avatarIndex',
+                        child: Material(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(14),
+                          child: InkWell(
+                            onTap: () => setState(() => _emoji = e),
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: isSel ? AppColors.accentSoft : AppColors.border,
-                              width: isSel ? 2 : 1,
+                            child: Container(
+                              width: 52,
+                              height: 52,
+                              decoration: BoxDecoration(
+                                color: AppColors.background.withValues(
+                                  alpha: 0.5,
+                                ),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: isSel
+                                      ? AppColors.accentSoft
+                                      : AppColors.border,
+                                  width: isSel ? 2 : 1,
+                                ),
+                              ),
+                              child: Center(
+                                child:
+                                    e.startsWith('assets/') ||
+                                        e.startsWith('http')
+                                    ? ClipRRect(
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: e.startsWith('http')
+                                            ? Image.network(
+                                                e,
+                                                width: 44,
+                                                height: 44,
+                                                fit: BoxFit.cover,
+                                              )
+                                            : Image.asset(
+                                                e,
+                                                width: 44,
+                                                height: 44,
+                                                fit: BoxFit.cover,
+                                              ),
+                                      )
+                                    : Text(
+                                        e,
+                                        style: const TextStyle(fontSize: 26),
+                                      ),
+                              ),
                             ),
-                          ),
-                          child: Center(
-                            child: e.startsWith('assets/') || e.startsWith('http')
-                                ? ClipRRect(
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: e.startsWith('http')
-                                        ? Image.network(e, width: 44, height: 44, fit: BoxFit.cover)
-                                        : Image.asset(e, width: 44, height: 44, fit: BoxFit.cover),
-                                  )
-                                : Text(e, style: const TextStyle(fontSize: 26)),
                           ),
                         ),
                       );
@@ -274,11 +333,16 @@ class _ProfileFormSheetState extends ConsumerState<ProfileFormSheet> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Profil Enfant', style: AppTextStyles.titleSmall),
+                              Text(
+                                'Profil enfant',
+                                style: AppTextStyles.titleSmall,
+                              ),
                               const SizedBox(height: 4),
                               Text(
                                 'N\'afficher que des contenus adaptés.',
-                                style: AppTextStyles.caption.copyWith(color: AppColors.textTertiary),
+                                style: AppTextStyles.caption.copyWith(
+                                  color: AppColors.textTertiary,
+                                ),
                               ),
                             ],
                           ),

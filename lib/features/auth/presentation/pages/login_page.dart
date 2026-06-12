@@ -9,6 +9,7 @@ import 'package:guezs_films/core/theme/app_colors.dart';
 import 'package:guezs_films/core/theme/app_text_styles.dart';
 import 'package:guezs_films/core/widgets/gradient_button.dart';
 import 'package:guezs_films/core/widgets/glass_card.dart';
+import 'package:guezs_films/core/widgets/premium_feedback.dart';
 import 'package:guezs_films/features/auth/presentation/providers/auth_providers.dart';
 
 /// Login page with email/password and social sign-in
@@ -75,11 +76,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     // Listen for errors
     ref.listen<AsyncValue>(authControllerProvider, (previous, next) {
       if (next is AsyncError) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(next.error.toString()),
-            backgroundColor: AppColors.error,
-          ),
+        showPremiumSnackBar(
+          context,
+          message: _userFacingAuthError(next.error),
+          tone: PremiumFeedbackTone.error,
         );
       } else if (next is AsyncData && next.value != null) {
         context.go(Routes.profileSelector);
@@ -88,17 +88,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
     final authState = ref.watch(authControllerProvider);
     final isLoading = authState is AsyncLoading;
-
-    // Détection d'erreur spécifique pour message d'aide (ex: Google Redirect)
-    String? helperMessage;
-    if (authState is AsyncError) {
-      final errorStr = authState.error.toString();
-      if (errorStr.contains('192.168.100.203') ||
-          errorStr.contains('redirect_uri_mismatch')) {
-        helperMessage =
-            "⚙️ Configuration : Ajoutez l'IP 192.168.100.203 dans les domaines autorisés de votre console Firebase.";
-      }
-    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -184,32 +173,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                           ),
 
                                           const SizedBox(height: 32),
-
-                                          // Message d'aide si erreur de configuration
-                                          if (helperMessage != null) ...[
-                                            Container(
-                                              padding: const EdgeInsets.all(12),
-                                              decoration: BoxDecoration(
-                                                color: AppColors.primary
-                                                    .withValues(alpha: 0.1),
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                                border: Border.all(
-                                                  color: AppColors.primary
-                                                      .withValues(alpha: 0.3),
-                                                ),
-                                              ),
-                                              child: Text(
-                                                helperMessage,
-                                                style: AppTextStyles.bodySmall
-                                                    .copyWith(
-                                                      color: AppColors.primary,
-                                                    ),
-                                                textAlign: TextAlign.center,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 24),
-                                          ],
 
                                           // Name field (only for signup)
                                           if (!_isLogin) ...[
@@ -484,6 +447,20 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       ],
     );
   }
+}
+
+String _userFacingAuthError(Object error) {
+  final message = error.toString().replaceFirst('Exception: ', '').trim();
+  final technical = message.toLowerCase();
+  if (technical.contains('firebase') ||
+      technical.contains('exception') ||
+      technical.contains('jsobject') ||
+      technical.contains('redirect_uri') ||
+      technical.contains('192.168.') ||
+      technical.contains('null')) {
+    return 'La connexion n’a pas pu être terminée. Réessayez dans quelques instants.';
+  }
+  return message.isEmpty ? 'La connexion n’a pas pu être terminée.' : message;
 }
 
 class _SocialButton extends StatelessWidget {

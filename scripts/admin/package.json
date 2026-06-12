@@ -6,7 +6,7 @@
   "scripts": {
     "create:code": "node create_access_code.js",
     "create:rule": "node create_content_access_rule.js",
-    "seed:demo": "node seed_access_demo.js"
+    "seed:demo": "node seed_access_demo.js --confirm-demo"
   },
   "dependencies": {
     "firebase-admin": "^12.0.0"

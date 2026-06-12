@@ -37,6 +37,14 @@ class PlayerContentRequest extends Equatable {
   final String? seasonId;
   final String? episodeId;
 
+  String get storageKey {
+    return switch (contentType) {
+      PlayerContentType.film => 'film:${filmId ?? ''}',
+      PlayerContentType.episode =>
+        'episode:${seriesId ?? ''}:${seasonId ?? ''}:${episodeId ?? ''}',
+    };
+  }
+
   @override
   List<Object?> get props => [
     contentType,

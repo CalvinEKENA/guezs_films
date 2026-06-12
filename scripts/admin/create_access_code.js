@@ -72,9 +72,8 @@ async function main() {
     ...(expiresAt ? { expiresAt } : {}),
   };
 
-  console.log(`Code normalisé: ${normalizedCode}`);
   console.log(`Document: access_codes/${docId}`);
-  console.log('Le code brut ne sera pas stocké.');
+  console.log('Le code brut ne sera ni stocké ni affiché.');
 
   if (args.dryRun) {
     console.log(JSON.stringify({ [docId]: payload }, null, 2));

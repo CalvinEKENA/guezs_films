@@ -9,6 +9,13 @@ const fs = require('fs');
  * 2. Rend toutes les images du dossier series/ publiques
  */
 
+if (!process.argv.includes('--confirm-public-images')) {
+  console.error(
+    'Opération bloquée. Ajoutez --confirm-public-images pour publier les images.',
+  );
+  process.exit(1);
+}
+
 const KEY_PATH = path.join(__dirname, 'serviceAccountKey.json');
 if (!fs.existsSync(KEY_PATH)) {
   console.error('\n❌  Clé Firebase Admin introuvable dans scripts/');
@@ -56,7 +63,7 @@ async function fix() {
     
     let fixedCount = 0;
     for (const file of files) {
-      if (file.name.match(/\.(jpg|jpeg|png|webp|mp4)$/i)) {
+      if (file.name.match(/\.(jpg|jpeg|png|webp)$/i)) {
         await file.makePublic();
         fixedCount++;
         if (fixedCount % 5 === 0) {

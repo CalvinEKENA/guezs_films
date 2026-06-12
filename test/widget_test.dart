@@ -1,9 +1,11 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:guezs_films/core/constants/app_constants.dart';
 import 'package:guezs_films/core/domain/entities/episode_entity.dart';
 import 'package:guezs_films/core/domain/entities/film_entity.dart';
 import 'package:guezs_films/core/domain/entities/season_entity.dart';
@@ -11,21 +13,277 @@ import 'package:guezs_films/core/domain/entities/series_entity.dart';
 import 'package:guezs_films/core/providers/content_providers.dart';
 import 'package:guezs_films/core/routes/app_router.dart';
 import 'package:guezs_films/core/routes/route_constants.dart';
+import 'package:guezs_films/core/search/search_normalization.dart';
+import 'package:guezs_films/core/widgets/premium_states.dart';
 import 'package:guezs_films/features/access/domain/entities/watch_access_result.dart';
 import 'package:guezs_films/features/access/presentation/providers/watch_access_providers.dart';
 import 'package:guezs_films/features/auth/domain/entities/user_entity.dart';
+import 'package:guezs_films/features/auth/presentation/providers/auth_error_mapper.dart';
 import 'package:guezs_films/features/auth/presentation/providers/auth_providers.dart';
 import 'package:guezs_films/features/details/presentation/pages/details_page.dart';
+import 'package:guezs_films/features/downloads/presentation/pages/downloads_page.dart';
 import 'package:guezs_films/features/downloads/presentation/providers/download_providers.dart';
 import 'package:guezs_films/features/favorites/presentation/providers/favorites_providers.dart';
+import 'package:guezs_films/features/player/data/player_progress_store.dart';
+import 'package:guezs_films/features/player/data/video_controller_factory.dart';
 import 'package:guezs_films/features/player/domain/entities/player_content_request.dart';
+import 'package:guezs_films/features/player/presentation/pages/player_page.dart';
+import 'package:guezs_films/features/profile/domain/entities/user_profile_entity.dart';
+import 'package:guezs_films/features/profile/presentation/pages/profile_page.dart';
+import 'package:guezs_films/features/profile/presentation/pages/profile_selector_page.dart';
+import 'package:guezs_films/features/profile/presentation/providers/user_profile_providers.dart';
+import 'package:guezs_films/features/search/presentation/pages/search_page.dart';
 import 'package:guezs_films/features/series/presentation/pages/series_details_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   testWidgets('App renders correctly', (WidgetTester tester) async {
     // TODO: Add proper widget tests for Guezs Films
     expect(true, isTrue);
   });
+
+  test('Player content requests expose stable local progress keys', () {
+    expect(PlayerContentRequest.film('film-42').storageKey, 'film:film-42');
+    expect(
+      PlayerContentRequest.episode(
+        seriesId: 'series-7',
+        seasonId: 'season-2',
+        episodeId: 'episode-4',
+      ).storageKey,
+      'episode:series-7:season-2:episode-4',
+    );
+  });
+
+  test(
+    'Player progress resumes useful positions and clears near the end',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      const store = PlayerProgressStore();
+      final request = PlayerContentRequest.film('resume-film');
+      const duration = Duration(minutes: 20);
+      const resumePosition = Duration(minutes: 3);
+
+      await store.save(request, position: resumePosition, duration: duration);
+      expect(await store.load(request, duration: duration), resumePosition);
+
+      await store.save(
+        request,
+        position: const Duration(minutes: 19),
+        duration: duration,
+      );
+      expect(await store.load(request, duration: duration), isNull);
+    },
+  );
+
+  test('Video source validation accepts streaming manifests', () {
+    expect(
+      VideoControllerFactory.isSupportedSource(
+        'https://media.example.com/master.m3u8',
+      ),
+      isTrue,
+    );
+    expect(
+      VideoControllerFactory.isSupportedSource('not a video url'),
+      isFalse,
+    );
+  });
+
+  test('Search normalization supports accents and multi-word tokens', () {
+    expect(normalizeSearchText('  Cinéma à Douala  '), 'cinema a douala');
+    expect(buildSearchQueryTokens('épopée voyage'), contains('épopée'));
+    expect(buildSearchQueryTokens('épopée voyage'), contains('epopee'));
+    expect(buildSearchQueryTokens('épopée voyage'), contains('voyage'));
+    expect(buildSearchQueryTokens('a'), isEmpty);
+  });
+
+  test('Catalog and watch route helpers remain refresh-safe', () {
+    expect(Routes.home, '/home');
+    expect(Routes.filmDetailsPath('film 42'), '/film/film%2042');
+    expect(Routes.seriesDetailsPath('series/7'), '/series/series%2F7');
+    expect(Routes.filmWatchPath('film 42'), '/watch/film/film%2042');
+    expect(
+      Routes.episodeWatchPath(
+        seriesId: 'series-7',
+        seasonId: 'season-2',
+        episodeId: 'episode-4',
+      ),
+      '/watch/series/series-7/season/season-2/episode/episode-4',
+    );
+  });
+
+  test('Auth configuration errors stay user-facing', () {
+    final message = AuthErrorMapper.map('redirect_uri_mismatch');
+
+    expect(message, contains('pas disponible'));
+    expect(message, isNot(contains('192.168.')));
+    expect(message, isNot(contains('Firebase')));
+  });
+
+  testWidgets('Search presents premium discovery and catalog filters', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1280, 1000));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final film = FilmEntity(
+      id: 'search-film',
+      title: 'Voyage à Douala',
+      description: 'Une aventure urbaine.',
+      posterUrl: '',
+      backdropUrl: '',
+      videoUrl: '',
+      genres: const ['Drame'],
+      year: 2026,
+      durationMin: 110,
+      rating: 8.4,
+      isFeatured: true,
+      isNew: true,
+      createdAt: DateTime(2026, 6, 10),
+      director: 'Awa N.',
+      country: 'Cameroun',
+      language: 'Français',
+      isExclusive: true,
+    );
+    final series = SeriesEntity(
+      id: 'search-series',
+      title: 'Nuits de Yaoundé',
+      description: 'Une chronique nocturne.',
+      posterUrl: '',
+      backdropUrl: '',
+      genres: const ['Thriller'],
+      year: 2025,
+      numberOfSeasons: 2,
+      isFeatured: true,
+      createdAt: DateTime(2026, 5, 20),
+      country: 'Cameroun',
+      language: 'Français',
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          filmsProvider.overrideWith((ref) async => [film]),
+          seriesProvider.overrideWith((ref) async => [series]),
+        ],
+        child: const MaterialApp(home: SearchPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Rechercher un film, une série, un réalisateur…'),
+      findsOneWidget,
+    );
+    expect(find.text('Tendances du moment'), findsOneWidget);
+    expect(find.text('Voyage à Douala'), findsOneWidget);
+    expect(find.text('Nuits de Yaoundé'), findsOneWidget);
+    expect(find.text('Exclusifs'), findsOneWidget);
+    expect(find.text('Pays'), findsOneWidget);
+
+    await tester.tap(find.text('Films'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Voyage à Douala'), findsOneWidget);
+    expect(find.text('Nuits de Yaoundé'), findsNothing);
+  });
+
+  testWidgets('Search waits for two characters before querying', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          filmsProvider.overrideWith((ref) async => const []),
+          seriesProvider.overrideWith((ref) async => const []),
+        ],
+        child: const MaterialApp(home: SearchPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'a');
+    await tester.pump(AppConstants.searchDebounce);
+
+    expect(find.text('Saisissez au moins 2 caractères.'), findsOneWidget);
+    expect(find.textContaining('Résultats pour'), findsNothing);
+  });
+
+  testWidgets('Search result opens the film details route', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1280, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final film = FilmEntity(
+      id: 'route-film',
+      title: 'Le Voyage Bleu',
+      description: 'Un film à retrouver par son titre.',
+      posterUrl: '',
+      backdropUrl: '',
+      videoUrl: '',
+      genres: const ['Aventure'],
+      year: 2026,
+      durationMin: 100,
+      rating: 7.8,
+      isFeatured: false,
+      isNew: true,
+      createdAt: DateTime(2026, 6, 9),
+    );
+    final router = GoRouter(
+      initialLocation: Routes.search,
+      routes: [
+        GoRoute(
+          path: Routes.search,
+          builder: (context, state) => const SearchPage(),
+        ),
+        GoRoute(
+          path: '${Routes.film}/:filmId',
+          builder: (context, state) =>
+              Text('Film ${state.pathParameters['filmId']}'),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          filmsProvider.overrideWith((ref) async => [film]),
+          seriesProvider.overrideWith((ref) async => const []),
+          searchFilmsProvider('voyage').overrideWith((ref) async => [film]),
+          searchSeriesProvider('voyage').overrideWith((ref) async => const []),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'voyage');
+    await tester.pump(AppConstants.searchDebounce);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Le Voyage Bleu'));
+    await tester.tap(find.text('Le Voyage Bleu'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Film route-film'), findsOneWidget);
+  });
+
+  testWidgets(
+    'Player presents a premium unavailable state for an empty source',
+    (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: PlayerPage(videoUrl: '', title: 'Séance indisponible'),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Vidéo indisponible'), findsOneWidget);
+      expect(
+        find.text('Aucune source de lecture n’est configurée pour ce contenu.'),
+        findsOneWidget,
+      );
+      expect(find.text('Réessayer'), findsOneWidget);
+    },
+  );
 
   testWidgets('Watch film route is recognized without navigation extras', (
     tester,
@@ -208,5 +466,149 @@ void main() {
     expect(find.text('La première nuit'), findsOneWidget);
     expect(find.text('Code requis'), findsOneWidget);
     expect(find.text('Saisons et épisodes'), findsOneWidget);
+  });
+
+  testWidgets('Premium empty state exposes a clear primary action', (
+    tester,
+  ) async {
+    var actionTriggered = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PremiumEmptyState(
+            icon: Icons.event_seat_outlined,
+            title: 'Votre fauteuil VIP vous attend',
+            message: 'Ajoutez un premier film à votre sélection.',
+            actionLabel: 'Explorer le catalogue',
+            onAction: () => actionTriggered = true,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Votre fauteuil VIP vous attend'), findsOneWidget);
+    await tester.tap(find.text('Explorer le catalogue'));
+    expect(actionTriggered, isTrue);
+  });
+
+  testWidgets('Downloads explains mobile availability on desktop', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+    try {
+      await tester.pumpWidget(
+        const ProviderScope(child: MaterialApp(home: DownloadsPage())),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Téléchargements'), findsOneWidget);
+      expect(
+        find.text(
+          'Les téléchargements hors-ligne sont réservés à l’application mobile pour le moment.',
+        ),
+        findsOneWidget,
+      );
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
+  });
+
+  testWidgets(
+    'Profile guest mode stays honest about unavailable account data',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(900, 1100));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authStateProvider.overrideWith((ref) => Stream.value(null)),
+          ],
+          child: const MaterialApp(home: ProfilePage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Mon espace'), findsOneWidget);
+      expect(find.text('Mode invité'), findsOneWidget);
+      expect(find.text('Se connecter'), findsOneWidget);
+      expect(find.text('Facturation'), findsNothing);
+    },
+  );
+
+  testWidgets('Profile selector renders supplied standard and child profiles', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1000, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final profiles = [
+      UserProfileEntity(
+        id: 'standard',
+        name: 'Ariane',
+        emoji: 'A',
+        colorIndex: 0,
+        isKids: false,
+        createdAt: DateTime(2026, 6, 12),
+      ),
+      UserProfileEntity(
+        id: 'kids',
+        name: 'Junior',
+        emoji: 'J',
+        colorIndex: 4,
+        isKids: true,
+        createdAt: DateTime(2026, 6, 12),
+      ),
+    ];
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authStateProvider.overrideWith(
+            (ref) => Stream.value(
+              const UserEntity(
+                uid: 'profiles-user',
+                email: 'profiles@example.com',
+              ),
+            ),
+          ),
+          userProfilesProvider(
+            'profiles-user',
+          ).overrideWith((ref) => Stream.value(profiles)),
+        ],
+        child: const MaterialApp(home: ProfileSelectorPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Qui regarde ?'), findsOneWidget);
+    expect(find.text('Ariane'), findsOneWidget);
+    expect(find.text('Junior'), findsOneWidget);
+    expect(find.text('Standard'), findsOneWidget);
+    expect(find.text('Enfant'), findsOneWidget);
+    expect(find.text('LA FEMME DU MBENGUISTE'), findsNothing);
+  });
+
+  testWidgets('Unknown routes show a product-safe error state', (tester) async {
+    final router = GoRouter(
+      initialLocation: '/route-inconnue',
+      routes: [
+        GoRoute(
+          path: Routes.home,
+          builder: (context, state) => const Text('Accueil test'),
+        ),
+      ],
+      errorBuilder: AppRouter.errorBuilder,
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Cette page n’est pas disponible'), findsOneWidget);
+    expect(find.text('Retour à l’accueil'), findsOneWidget);
+    expect(find.text('/route-inconnue'), findsNothing);
+    expect(find.text('Page not found'), findsNothing);
   });
 }

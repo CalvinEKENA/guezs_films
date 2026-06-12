@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/datasources/auth_remote_data_source.dart';
@@ -51,8 +51,8 @@ final getAuthStateChangesProvider = Provider<GetAuthStateChanges>((ref) {
 
 final deleteAccountUseCaseProvider = Provider<DeleteAccountUseCase>((ref) {
   return DeleteAccountUseCase(
-    authRepository: ref.watch(authRepositoryProvider),
-    firestore: FirebaseFirestore.instance,
+    auth: ref.watch(firebaseAuthProvider),
+    functions: FirebaseFunctions.instance,
   );
 });
 
@@ -109,16 +109,13 @@ class AuthController extends StateNotifier<AsyncValue<UserEntity?>> {
     final useCase = _ref.read(signInWithGoogleUseCaseProvider);
     final result = await useCase.execute();
 
-    result.fold(
-      (failure) {
-        if (failure is CancelledFailure) {
-          state = const AsyncValue.data(null);
-        } else {
-          state = AsyncValue.error(failure.message, StackTrace.current);
-        }
-      },
-      (user) => state = AsyncValue.data(user),
-    );
+    result.fold((failure) {
+      if (failure is CancelledFailure) {
+        state = const AsyncValue.data(null);
+      } else {
+        state = AsyncValue.error(failure.message, StackTrace.current);
+      }
+    }, (user) => state = AsyncValue.data(user));
   }
 
   Future<void> signInWithApple() async {
@@ -126,16 +123,13 @@ class AuthController extends StateNotifier<AsyncValue<UserEntity?>> {
     final useCase = _ref.read(signInWithAppleUseCaseProvider);
     final result = await useCase.execute();
 
-    result.fold(
-      (failure) {
-        if (failure is CancelledFailure) {
-          state = const AsyncValue.data(null);
-        } else {
-          state = AsyncValue.error(failure.message, StackTrace.current);
-        }
-      },
-      (user) => state = AsyncValue.data(user),
-    );
+    result.fold((failure) {
+      if (failure is CancelledFailure) {
+        state = const AsyncValue.data(null);
+      } else {
+        state = AsyncValue.error(failure.message, StackTrace.current);
+      }
+    }, (user) => state = AsyncValue.data(user));
   }
 
   Future<void> logout() async {
@@ -155,12 +149,12 @@ class AuthController extends StateNotifier<AsyncValue<UserEntity?>> {
     required bool deleteDownloads,
   }) async {
     state = const AsyncValue.loading();
-    final result = await _ref.read(deleteAccountUseCaseProvider).execute(
-      credential: credential,
-      deleteDownloads: deleteDownloads,
-    );
+    final result = await _ref
+        .read(deleteAccountUseCaseProvider)
+        .execute(credential: credential, deleteDownloads: deleteDownloads);
     result.fold(
-      (failure) => state = AsyncValue.error(failure.message, StackTrace.current),
+      (failure) =>
+          state = AsyncValue.error(failure.message, StackTrace.current),
       (_) => state = const AsyncValue.data(null),
     );
   }

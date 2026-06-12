@@ -39,16 +39,16 @@ class AuthErrorMapper {
       case 'apple-auth-error':
         return "Erreur lors de la connexion avec Apple. Veuillez réessayer.";
       case 'redirect_uri_mismatch':
-        return "L'adresse IP actuelle (192.168.100.203) n'est pas autorisée. Vérifiez les réglages Firebase.";
+        return "La connexion avec ce fournisseur n'est pas disponible pour le moment.";
       default:
         // Si le message original contient des termes techniques, on retourne un message générique
-        if (originalMessage != null && 
-            (originalMessage.contains('Firebase') || 
-             originalMessage.contains('Exception') || 
-             originalMessage.contains('null') ||
-             originalMessage.contains('redirect_uri_mismatch'))) {
+        if (originalMessage != null &&
+            (originalMessage.contains('Firebase') ||
+                originalMessage.contains('Exception') ||
+                originalMessage.contains('null') ||
+                originalMessage.contains('redirect_uri_mismatch'))) {
           if (originalMessage.contains('redirect_uri_mismatch')) {
-            return "Configuration requise : Ajoutez l'IP 192.168.100.203 dans les domaines autorisés Firebase.";
+            return "La connexion avec ce fournisseur n'est pas disponible pour le moment.";
           }
           return "Une erreur est survenue. Veuillez vérifier vos informations et réessayer.";
         }

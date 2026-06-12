@@ -88,6 +88,21 @@ class AppTheme {
         ),
       ),
 
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.brandGold,
+          foregroundColor: AppColors.textOnGold,
+          disabledBackgroundColor: AppColors.surfaceVariant,
+          disabledForegroundColor: AppColors.textDisabled,
+          minimumSize: const Size(44, 46),
+          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 13),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          textStyle: AppTextStyles.buttonLabel,
+        ),
+      ),
+
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: AppColors.accent,
@@ -171,7 +186,7 @@ class AppTheme {
         modalBackgroundColor: AppColors.bottomSheet,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         dragHandleColor: AppColors.textTertiary,
         dragHandleSize: Size(40, 4),
@@ -200,7 +215,11 @@ class AppTheme {
         ),
         behavior: SnackBarBehavior.floating,
         elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        insetPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: AppColors.glassBorder(0.3)),
+        ),
       ),
 
       dividerTheme: const DividerThemeData(

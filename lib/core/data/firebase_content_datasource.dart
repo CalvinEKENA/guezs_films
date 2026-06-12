@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../search/search_normalization.dart';
 import 'models/episode_model.dart';
 import 'models/film_model.dart';
 import 'models/season_model.dart';
@@ -171,11 +172,12 @@ class FirebaseContentDataSourceImpl implements FirebaseContentDataSource {
 
   @override
   Future<List<FilmModel>> searchFilms(String query) async {
-    final normalizedQuery = query.trim().toLowerCase();
-    if (normalizedQuery.isEmpty) return const [];
+    final queryTokens = buildSearchQueryTokens(query);
+    if (queryTokens.isEmpty) return const [];
 
     final snapshot = await _filmsCollection
-        .where('searchTokens', arrayContains: normalizedQuery)
+        .where('searchTokens', arrayContainsAny: queryTokens)
+        .limit(60)
         .get();
 
     return snapshot.docs.map(FilmModel.fromFirestore).toList(growable: false);
@@ -183,11 +185,12 @@ class FirebaseContentDataSourceImpl implements FirebaseContentDataSource {
 
   @override
   Future<List<SeriesModel>> searchSeries(String query) async {
-    final normalizedQuery = query.trim().toLowerCase();
-    if (normalizedQuery.isEmpty) return const [];
+    final queryTokens = buildSearchQueryTokens(query);
+    if (queryTokens.isEmpty) return const [];
 
     final snapshot = await _seriesCollection
-        .where('searchTokens', arrayContains: normalizedQuery)
+        .where('searchTokens', arrayContainsAny: queryTokens)
+        .limit(60)
         .get();
 
     return snapshot.docs.map(SeriesModel.fromFirestore).toList(growable: false);

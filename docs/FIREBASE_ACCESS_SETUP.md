@@ -111,7 +111,7 @@ Pour un MVP premium, préférer des règles précises par film/série/épisode p
 ## 5. Créer des données de démonstration
 
 ```powershell
-node seed_access_demo.js
+node seed_access_demo.js --confirm-demo
 ```
 
 Ce script crée:

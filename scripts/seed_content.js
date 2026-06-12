@@ -13,14 +13,21 @@
  *   • Placer votre clé Firebase Admin sous scripts/serviceAccountKey.json
  *     (Firebase Console → Project Settings → Service accounts → Generate new private key)
  *
- * Usage :
- *   node seed_content.js
+ * Usage de démonstration uniquement :
+ *   node seed_content.js --confirm-public-media
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
 const admin = require('firebase-admin');
 const fs = require('fs');
 const path = require('path');
+
+if (!process.argv.includes('--confirm-public-media')) {
+  console.error(
+    'Seed bloqué: ce script publie des médias. Ajoutez --confirm-public-media uniquement pour un environnement de démonstration.',
+  );
+  process.exit(1);
+}
 
 // ─── Vérification de la clé de service ───────────────────────────────────────
 const KEY_PATH = path.join(__dirname, 'serviceAccountKey.json');

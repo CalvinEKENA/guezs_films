@@ -8,6 +8,7 @@ import '../domain/entities/film_entity.dart';
 import '../domain/entities/season_entity.dart';
 import '../domain/entities/series_entity.dart';
 import '../domain/repositories/content_repository.dart';
+import '../search/search_normalization.dart';
 
 final firebaseFirestoreProvider = Provider<FirebaseFirestore>((ref) {
   return FirebaseFirestore.instance;
@@ -90,19 +91,25 @@ final episodeDetailsProvider =
           .getEpisodeById(params.seriesId, params.seasonId, params.episodeId);
     });
 
-final searchFilmsProvider = FutureProvider.family<List<FilmEntity>, String>((
-  ref,
-  query,
-) async {
-  return ref.watch(contentRepositoryProvider).searchFilms(query);
-});
+final searchFilmsProvider =
+    FutureProvider.autoDispose.family<List<FilmEntity>, String>((
+      ref,
+      query,
+    ) async {
+      final normalizedQuery = normalizeSearchText(query);
+      if (normalizedQuery.length < minimumSearchLength) return const [];
+      return ref.watch(contentRepositoryProvider).searchFilms(query);
+    });
 
-final searchSeriesProvider = FutureProvider.family<List<SeriesEntity>, String>((
-  ref,
-  query,
-) async {
-  return ref.watch(contentRepositoryProvider).searchSeries(query);
-});
+final searchSeriesProvider =
+    FutureProvider.autoDispose.family<List<SeriesEntity>, String>((
+      ref,
+      query,
+    ) async {
+      final normalizedQuery = normalizeSearchText(query);
+      if (normalizedQuery.length < minimumSearchLength) return const [];
+      return ref.watch(contentRepositoryProvider).searchSeries(query);
+    });
 
 final filmsByGenreProvider = FutureProvider.family<List<FilmEntity>, String>((
   ref,

@@ -10,6 +10,12 @@ const {
 const DEMO_CODE = 'DEMO-AMBASSADOR-2026';
 
 async function main() {
+  if (!process.argv.includes('--confirm-demo')) {
+    throw new Error(
+      'Seed bloqué. Ajoutez --confirm-demo uniquement sur un projet de démonstration.',
+    );
+  }
+
   const db = initAdmin();
   const normalizedCode = normalizeAccessCode(DEMO_CODE);
   const codeId = accessCodeDocId(normalizedCode);
