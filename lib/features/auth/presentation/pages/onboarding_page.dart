@@ -14,9 +14,10 @@ import '../widgets/onboarding_progress_indicator.dart';
 import '../widgets/onboarding_slide_widget.dart';
 
 class OnboardingPage extends ConsumerStatefulWidget {
-  const OnboardingPage({super.key, this.onCompleted});
+  const OnboardingPage({super.key, this.onCompleted, this.completionPath});
 
   final FutureOr<void> Function()? onCompleted;
+  final String? completionPath;
 
   @override
   ConsumerState<OnboardingPage> createState() => _OnboardingPageState();
@@ -86,7 +87,12 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
         await ref.read(onboardingProvider.notifier).completeOnboarding();
       }
       if (!mounted) return;
-      context.go(Routes.login, extra: {'isLogin': false});
+      final completionPath = widget.completionPath;
+      if (completionPath != null) {
+        context.go(completionPath);
+      } else {
+        context.go(Routes.login, extra: {'isLogin': false});
+      }
     } finally {
       if (mounted) setState(() => _isCompleting = false);
     }

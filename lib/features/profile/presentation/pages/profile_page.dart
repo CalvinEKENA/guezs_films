@@ -528,6 +528,17 @@ class _PreferencesSection extends StatelessWidget {
                   'Les alertes éditoriales ne sont pas encore connectées à un service backend. Les notifications de téléchargement mobile restent gérées par l’appareil.',
             ),
           ),
+          _SettingsTile(
+            icon: Icons.movie_filter_outlined,
+            title: 'Revoir l’introduction',
+            subtitle: 'Redécouvrir l’expérience GUEZS FILMS',
+            onTap: () => context.push(
+              Uri(
+                path: Routes.onboarding,
+                queryParameters: const {'replay': 'true'},
+              ).toString(),
+            ),
+          ),
         ],
       ),
     );

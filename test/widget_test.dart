@@ -122,6 +122,16 @@ void main() {
     expect(Routes.termsOfUse, '/terms-of-use');
   });
 
+  test('Onboarding replay route remains explicit and refresh-safe', () {
+    expect(
+      Uri(
+        path: Routes.onboarding,
+        queryParameters: const {'replay': 'true'},
+      ).toString(),
+      '/onboarding?replay=true',
+    );
+  });
+
   test(
     'Firebase runtime targets the deployed project and Functions region',
     () {
@@ -704,6 +714,7 @@ void main() {
       expect(find.text('Mode invité'), findsOneWidget);
       expect(find.text('Se connecter'), findsOneWidget);
       expect(find.text('Facturation'), findsNothing);
+      expect(find.text('Revoir l’introduction'), findsOneWidget);
     },
   );
 

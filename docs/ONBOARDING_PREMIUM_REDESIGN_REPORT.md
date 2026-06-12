@@ -87,7 +87,13 @@ La logique existante reste inchangée:
 2. l’état Riverpod est mis à jour;
 3. la navigation ouvre `/login` avec le mode inscription.
 
-Le routing et Firebase n’ont pas été modifiés.
+Firebase n’a pas été modifié. Le routing d’authentification normal reste
+inchangé.
+
+Après mise à jour d’une installation existante, la valeur Hive de fin
+d’onboarding reste volontairement conservée. Une entrée `Revoir
+l’introduction` est donc disponible dans le profil et ouvre
+`/onboarding?replay=true` sans supprimer les données du compte.
 
 ## Couverture de test
 
@@ -133,6 +139,9 @@ Résultats:
 - le parcours mobile complet ne présente aucun overflow dans les tests.
 - contrôle visuel Hosting local: OK sur `390x844` et `1280x800`;
 - transition du premier au deuxième écran: OK, aucune erreur console.
+- APK Android `versionCode 3`: OK;
+- les quatre WebP sont présents dans l’APK release;
+- relecture depuis le profil après mise à jour: couverte par les tests.
 
 Le build signale uniquement les incompatibilités Wasm déjà connues de
 `flutter_secure_storage_web`. Elles n’empêchent pas le build Web JavaScript

@@ -63,6 +63,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           path == Routes.splash;
       final isProfileSelector = path == Routes.profileSelector;
       final isWatchRoute = path.startsWith('${Routes.watch}/');
+      final isOnboardingReplay =
+          path == Routes.onboarding &&
+          state.uri.queryParameters['replay'] == 'true';
       final isPublicInformationRoute =
           path == Routes.support ||
           path == Routes.privacyPolicy ||
@@ -79,7 +82,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       // Connecté + route auth → sélecteur de profil
-      if (isAuthRoute) return Routes.profileSelector;
+      if (isAuthRoute && !isOnboardingReplay) return Routes.profileSelector;
 
       return null;
     },
@@ -107,7 +110,10 @@ class AppRouter {
     GoRoute(
       path: Routes.onboarding,
       name: 'onboarding',
-      builder: (context, state) => const OnboardingPage(),
+      builder: (context, state) {
+        final isReplay = state.uri.queryParameters['replay'] == 'true';
+        return OnboardingPage(completionPath: isReplay ? Routes.profile : null);
+      },
     ),
 
     GoRoute(
