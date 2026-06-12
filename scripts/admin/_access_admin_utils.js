@@ -131,11 +131,18 @@ function ruleIdForScope(scope) {
   }
 }
 
-function initAdmin() {
+function initAdmin(projectId) {
   if (admin.apps.length === 0) {
     admin.initializeApp({
       credential: admin.credential.applicationDefault(),
+      ...(projectId ? { projectId } : {}),
     });
+  }
+  const activeProjectId = admin.app().options.projectId;
+  if (projectId && activeProjectId && activeProjectId !== projectId) {
+    throw new Error(
+      `Projet Firebase inattendu: ${activeProjectId}. Projet requis: ${projectId}.`,
+    );
   }
   return admin.firestore();
 }

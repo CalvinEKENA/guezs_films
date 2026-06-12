@@ -14,6 +14,9 @@ class Routes {
   static const String favorites = '/favorites';
   static const String downloads = '/downloads';
   static const String profile = '/profile';
+  static const String support = '/support';
+  static const String privacyPolicy = '/privacy-policy';
+  static const String termsOfUse = '/terms-of-use';
 
   // Content
   static const String film = '/film';

@@ -8,6 +8,7 @@ enum WatchAccessStatus {
   guest,
   codeRequired,
   expired,
+  serviceNotDeployed,
   unavailable,
   error,
 }
@@ -77,6 +78,10 @@ class WatchAccessResult extends Equatable {
       status == WatchAccessStatus.expired;
 
   bool get requiresLogin => status == WatchAccessStatus.guest;
+
+  bool get allowsTemporaryMvpFallback =>
+      status == WatchAccessStatus.serviceNotDeployed ||
+      status == WatchAccessStatus.unavailable;
 
   @override
   List<Object?> get props => [

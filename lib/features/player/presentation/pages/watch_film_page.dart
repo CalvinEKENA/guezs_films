@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,8 +9,9 @@ import '../../../../core/widgets/promo_code_dialog.dart';
 import '../../../access/domain/entities/watch_access_result.dart';
 import '../../../access/presentation/providers/watch_access_providers.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
-import '../widgets/watch_state_view.dart';
 import '../../domain/entities/player_content_request.dart';
+import '../../domain/services/mvp_playback_fallback.dart';
+import '../widgets/watch_state_view.dart';
 import 'player_page.dart';
 
 class WatchFilmPage extends ConsumerWidget {
@@ -72,6 +74,24 @@ class WatchFilmPage extends ConsumerWidget {
       ),
       data: (film) {
         final access = accessAsync.valueOrNull;
+        final directVideoUrl = film.videoUrl.trim();
+        if (shouldUseDirectVideoFallback(
+          access: access,
+          directVideoUrl: directVideoUrl,
+        )) {
+          if (kDebugMode) {
+            debugPrint(
+              'Temporary MVP direct-video fallback used for film $filmId.',
+            );
+          }
+          return PlayerPage(
+            videoUrl: directVideoUrl,
+            title: film.title,
+            posterUrl: film.posterUrl,
+            request: request,
+          );
+        }
+
         if (access == null || !access.allowed) {
           return _buildAccessState(
             context: context,
@@ -92,8 +112,7 @@ class WatchFilmPage extends ConsumerWidget {
           return WatchStateView(
             icon: Icons.videocam_off_outlined,
             title: 'Vidéo indisponible',
-            message:
-                'Ce film existe dans le catalogue, mais aucune source vidéo exploitable n’est configurée.',
+            message: 'Cette vidéo est momentanément indisponible.',
             primaryLabel: 'Retour au film',
             onPrimaryPressed: () => context.go(Routes.filmDetailsPath(filmId)),
             secondaryLabel: 'Catalogue',

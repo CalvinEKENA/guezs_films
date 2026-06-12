@@ -1,5 +1,7 @@
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/foundation.dart';
 
+import '../../../../core/config/firebase_runtime_config.dart';
 import '../../../player/domain/entities/player_content_request.dart';
 import '../../domain/entities/watch_access_result.dart';
 import '../../domain/repositories/watch_access_repository.dart';
@@ -50,9 +52,16 @@ class CloudFunctionsWatchAccessRepository implements WatchAccessRepository {
       final result = await callable.call<Map<String, dynamic>>(payload);
       return WatchAccessResult.fromMap(Map<String, dynamic>.from(result.data));
     } on FirebaseFunctionsException catch (error) {
+      if (kDebugMode) {
+        debugPrint(
+          'Firebase callable $name failed on '
+          '${FirebaseRuntimeConfig.firebaseProjectId}/'
+          '${FirebaseRuntimeConfig.functionsRegion}: ${error.code}',
+        );
+      }
       return WatchAccessResult.failure(
-        status: _statusForFunctionCode(error.code),
-        message: error.message ?? 'Accès vidéo indisponible pour le moment.',
+        status: WatchAccessFunctionErrorMapper.statusForCode(error.code),
+        message: WatchAccessFunctionErrorMapper.messageForCode(error.code),
       );
     } catch (_) {
       return WatchAccessResult.failure(
@@ -71,8 +80,12 @@ class CloudFunctionsWatchAccessRepository implements WatchAccessRepository {
       if (request.episodeId != null) 'episodeId': request.episodeId,
     };
   }
+}
 
-  WatchAccessStatus _statusForFunctionCode(String code) {
+class WatchAccessFunctionErrorMapper {
+  const WatchAccessFunctionErrorMapper._();
+
+  static WatchAccessStatus statusForCode(String code) {
     switch (code) {
       case 'unauthenticated':
         return WatchAccessStatus.guest;
@@ -80,10 +93,36 @@ class CloudFunctionsWatchAccessRepository implements WatchAccessRepository {
         return WatchAccessStatus.denied;
       case 'failed-precondition':
         return WatchAccessStatus.codeRequired;
+      case 'not-found':
+        return WatchAccessStatus.serviceNotDeployed;
       case 'unavailable':
+      case 'internal':
+      case 'deadline-exceeded':
         return WatchAccessStatus.unavailable;
       default:
         return WatchAccessStatus.error;
+    }
+  }
+
+  static String messageForCode(String code) {
+    switch (code) {
+      case 'not-found':
+        return 'Le service d’accès vidéo n’est pas encore déployé sur '
+            'Firebase. Déployez les Cloud Functions ou activez le mode MVP.';
+      case 'unavailable':
+        return 'Le service d’accès vidéo est momentanément indisponible.';
+      case 'permission-denied':
+        return 'Votre compte n’est pas autorisé à accéder à ce contenu.';
+      case 'unauthenticated':
+        return 'Connectez-vous pour demander un accès vidéo.';
+      case 'failed-precondition':
+        return 'Ce contenu nécessite un code ou un accès valide.';
+      case 'internal':
+        return 'Le service d’accès vidéo a rencontré un problème temporaire.';
+      case 'deadline-exceeded':
+        return 'La vérification de l’accès prend trop de temps. Réessayez.';
+      default:
+        return 'Impossible de vérifier l’accès vidéo pour le moment.';
     }
   }
 }

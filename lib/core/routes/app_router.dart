@@ -9,6 +9,9 @@ import 'package:guezs_films/features/auth/presentation/pages/onboarding_page.dar
 import 'package:guezs_films/features/auth/presentation/pages/login_page.dart';
 import 'package:guezs_films/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:guezs_films/features/home/presentation/pages/home_page.dart';
+import 'package:guezs_films/features/legal/presentation/pages/privacy_policy_page.dart';
+import 'package:guezs_films/features/legal/presentation/pages/support_page.dart';
+import 'package:guezs_films/features/legal/presentation/pages/terms_of_use_page.dart';
 import 'package:guezs_films/features/search/presentation/pages/search_page.dart';
 import 'package:guezs_films/features/favorites/presentation/pages/favorites_page.dart';
 import 'package:guezs_films/features/downloads/presentation/pages/downloads_page.dart';
@@ -60,10 +63,17 @@ final routerProvider = Provider<GoRouter>((ref) {
           path == Routes.splash;
       final isProfileSelector = path == Routes.profileSelector;
       final isWatchRoute = path.startsWith('${Routes.watch}/');
+      final isPublicInformationRoute =
+          path == Routes.support ||
+          path == Routes.privacyPolicy ||
+          path == Routes.termsOfUse;
 
       if (user == null) {
         // Non connecté → login (sauf si déjà sur une route auth)
-        return isAuthRoute || isProfileSelector || isWatchRoute
+        return isAuthRoute ||
+                isProfileSelector ||
+                isWatchRoute ||
+                isPublicInformationRoute
             ? null
             : Routes.login;
       }
@@ -136,6 +146,24 @@ class AppRouter {
         transitionsBuilder: (context, animation, secondaryAnimation, child) =>
             FadeTransition(opacity: animation, child: child),
       ),
+    ),
+
+    GoRoute(
+      path: Routes.support,
+      name: 'support',
+      builder: (context, state) => const SupportPage(),
+    ),
+
+    GoRoute(
+      path: Routes.privacyPolicy,
+      name: 'privacy-policy',
+      builder: (context, state) => const PrivacyPolicyPage(),
+    ),
+
+    GoRoute(
+      path: Routes.termsOfUse,
+      name: 'terms-of-use',
+      builder: (context, state) => const TermsOfUsePage(),
     ),
 
     // ─────────────────────────────────────────────────────────────────────

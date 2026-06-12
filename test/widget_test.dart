@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:guezs_films/core/config/firebase_runtime_config.dart';
 import 'package:guezs_films/core/constants/app_constants.dart';
 import 'package:guezs_films/core/domain/entities/episode_entity.dart';
 import 'package:guezs_films/core/domain/entities/film_entity.dart';
@@ -16,6 +17,7 @@ import 'package:guezs_films/core/routes/route_constants.dart';
 import 'package:guezs_films/core/search/search_normalization.dart';
 import 'package:guezs_films/core/widgets/premium_states.dart';
 import 'package:guezs_films/features/access/domain/entities/watch_access_result.dart';
+import 'package:guezs_films/features/access/data/repositories/cloud_functions_watch_access_repository.dart';
 import 'package:guezs_films/features/access/presentation/providers/watch_access_providers.dart';
 import 'package:guezs_films/features/auth/domain/entities/user_entity.dart';
 import 'package:guezs_films/features/auth/presentation/providers/auth_error_mapper.dart';
@@ -24,9 +26,13 @@ import 'package:guezs_films/features/details/presentation/pages/details_page.dar
 import 'package:guezs_films/features/downloads/presentation/pages/downloads_page.dart';
 import 'package:guezs_films/features/downloads/presentation/providers/download_providers.dart';
 import 'package:guezs_films/features/favorites/presentation/providers/favorites_providers.dart';
+import 'package:guezs_films/features/legal/presentation/pages/privacy_policy_page.dart';
+import 'package:guezs_films/features/legal/presentation/pages/support_page.dart';
+import 'package:guezs_films/features/legal/presentation/pages/terms_of_use_page.dart';
 import 'package:guezs_films/features/player/data/player_progress_store.dart';
 import 'package:guezs_films/features/player/data/video_controller_factory.dart';
 import 'package:guezs_films/features/player/domain/entities/player_content_request.dart';
+import 'package:guezs_films/features/player/domain/services/mvp_playback_fallback.dart';
 import 'package:guezs_films/features/player/presentation/pages/player_page.dart';
 import 'package:guezs_films/features/profile/domain/entities/user_profile_entity.dart';
 import 'package:guezs_films/features/profile/presentation/pages/profile_page.dart';
@@ -108,6 +114,101 @@ void main() {
         episodeId: 'episode-4',
       ),
       '/watch/series/series-7/season/season-2/episode/episode-4',
+    );
+    expect(Routes.support, '/support');
+    expect(Routes.privacyPolicy, '/privacy-policy');
+    expect(Routes.termsOfUse, '/terms-of-use');
+  });
+
+  test(
+    'Firebase runtime targets the deployed project and Functions region',
+    () {
+      expect(FirebaseRuntimeConfig.firebaseProjectId, 'guezs-films');
+      expect(FirebaseRuntimeConfig.functionsRegion, 'us-central1');
+    },
+  );
+
+  test('Functions errors stay explicit and user-facing', () {
+    expect(
+      WatchAccessFunctionErrorMapper.statusForCode('not-found'),
+      WatchAccessStatus.serviceNotDeployed,
+    );
+    expect(
+      WatchAccessFunctionErrorMapper.messageForCode('not-found'),
+      'Le service d’accès vidéo n’est pas encore déployé sur Firebase. '
+      'Déployez les Cloud Functions ou activez le mode MVP.',
+    );
+    expect(
+      WatchAccessFunctionErrorMapper.statusForCode('permission-denied'),
+      WatchAccessStatus.denied,
+    );
+    expect(
+      WatchAccessFunctionErrorMapper.statusForCode('unauthenticated'),
+      WatchAccessStatus.guest,
+    );
+    expect(
+      WatchAccessFunctionErrorMapper.statusForCode('failed-precondition'),
+      WatchAccessStatus.codeRequired,
+    );
+    expect(
+      WatchAccessFunctionErrorMapper.messageForCode('not-found'),
+      isNot(contains('not_found')),
+    );
+  });
+
+  test('MVP video fallback never bypasses business access decisions', () {
+    const videoUrl = 'https://media.example.com/movie.mp4';
+    const serviceMissing = WatchAccessResult(
+      allowed: false,
+      status: WatchAccessStatus.serviceNotDeployed,
+      message: 'Service absent',
+    );
+    const unavailable = WatchAccessResult(
+      allowed: false,
+      status: WatchAccessStatus.unavailable,
+      message: 'Service indisponible',
+    );
+
+    expect(
+      shouldUseDirectVideoFallback(
+        access: serviceMissing,
+        directVideoUrl: videoUrl,
+      ),
+      isTrue,
+    );
+    expect(
+      shouldUseDirectVideoFallback(
+        access: unavailable,
+        directVideoUrl: videoUrl,
+      ),
+      isTrue,
+    );
+
+    for (final status in [
+      WatchAccessStatus.guest,
+      WatchAccessStatus.codeRequired,
+      WatchAccessStatus.denied,
+      WatchAccessStatus.expired,
+      WatchAccessStatus.error,
+    ]) {
+      expect(
+        shouldUseDirectVideoFallback(
+          access: WatchAccessResult(
+            allowed: false,
+            status: status,
+            message: 'Accès refusé',
+          ),
+          directVideoUrl: videoUrl,
+        ),
+        isFalse,
+        reason:
+            'Le statut ${status.name} ne doit jamais autoriser le fallback.',
+      );
+    }
+
+    expect(
+      shouldUseDirectVideoFallback(access: serviceMissing, directVideoUrl: ' '),
+      isFalse,
     );
   });
 
@@ -536,6 +637,23 @@ void main() {
       expect(find.text('Facturation'), findsNothing);
     },
   );
+
+  testWidgets('Legal pages expose the required production information', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const MaterialApp(home: SupportPage()));
+    expect(find.text('Support GUEZS FILMS'), findsOneWidget);
+    expect(find.text('Assistance compte'), findsOneWidget);
+    expect(find.text('support@guezsfilms.com'), findsOneWidget);
+
+    await tester.pumpWidget(const MaterialApp(home: PrivacyPolicyPage()));
+    expect(find.text('Politique de confidentialité'), findsOneWidget);
+    expect(find.text('Droits de l’utilisateur'), findsOneWidget);
+
+    await tester.pumpWidget(const MaterialApp(home: TermsOfUsePage()));
+    expect(find.text('Conditions d’utilisation'), findsOneWidget);
+    expect(find.text('Usage personnel'), findsOneWidget);
+  });
 
   testWidgets('Profile selector renders supplied standard and child profiles', (
     tester,

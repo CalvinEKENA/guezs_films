@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,8 +9,9 @@ import '../../../../core/widgets/promo_code_dialog.dart';
 import '../../../access/domain/entities/watch_access_result.dart';
 import '../../../access/presentation/providers/watch_access_providers.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
-import '../widgets/watch_state_view.dart';
 import '../../domain/entities/player_content_request.dart';
+import '../../domain/services/mvp_playback_fallback.dart';
+import '../widgets/watch_state_view.dart';
 import 'player_page.dart';
 
 class WatchEpisodePage extends ConsumerWidget {
@@ -125,6 +127,26 @@ class WatchEpisodePage extends ConsumerWidget {
     final episode = episodeAsync.value!;
     final series = seriesAsync.value!;
     final access = accessAsync.valueOrNull;
+    final directVideoUrl = episode.videoUrl.trim();
+    if (shouldUseDirectVideoFallback(
+      access: access,
+      directVideoUrl: directVideoUrl,
+    )) {
+      if (kDebugMode) {
+        debugPrint(
+          'Temporary MVP direct-video fallback used for episode $episodeId.',
+        );
+      }
+      return PlayerPage(
+        videoUrl: directVideoUrl,
+        title: episode.title,
+        posterUrl: episode.thumbnailUrl.isNotEmpty
+            ? episode.thumbnailUrl
+            : series.posterUrl,
+        request: request,
+      );
+    }
+
     if (access == null || !access.allowed) {
       return _buildAccessState(
         context: context,
@@ -145,8 +167,7 @@ class WatchEpisodePage extends ConsumerWidget {
       return WatchStateView(
         icon: Icons.videocam_off_outlined,
         title: 'Vidéo indisponible',
-        message:
-            'Cet épisode existe dans le catalogue, mais aucune source vidéo exploitable n’est configurée.',
+        message: 'Cette vidéo est momentanément indisponible.',
         primaryLabel: 'Retour à la série',
         onPrimaryPressed: () => context.go(Routes.seriesDetailsPath(seriesId)),
         secondaryLabel: 'Catalogue',

@@ -538,44 +538,26 @@ class _InformationSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _SettingsSection(
-      title: 'Aide et informations',
+      title: 'Assistance & légal',
       child: Column(
         children: [
           _SettingsTile(
             icon: Icons.support_agent_rounded,
             title: 'Support',
-            subtitle: 'Centre d’aide en préparation',
-            onTap: () => showPremiumInfoSheet(
-              context,
-              icon: Icons.support_agent_rounded,
-              title: 'Support GUEZS FILMS',
-              message:
-                  'Le centre d’aide et le contact support seront ajoutés dans une prochaine version.',
-            ),
+            subtitle: 'Compte, accès, lecture et téléchargements',
+            onTap: () => context.push(Routes.support),
           ),
           _SettingsTile(
             icon: Icons.privacy_tip_outlined,
             title: 'Politique de confidentialité',
-            subtitle: 'Document en préparation',
-            onTap: () => showPremiumInfoSheet(
-              context,
-              icon: Icons.privacy_tip_outlined,
-              title: 'Politique de confidentialité',
-              message:
-                  'Le document juridique final sera publié ici avant la mise en production publique.',
-            ),
+            subtitle: 'Données, sécurité et droits',
+            onTap: () => context.push(Routes.privacyPolicy),
           ),
           _SettingsTile(
             icon: Icons.description_outlined,
             title: 'Conditions d’utilisation',
-            subtitle: 'Document en préparation',
-            onTap: () => showPremiumInfoSheet(
-              context,
-              icon: Icons.description_outlined,
-              title: 'Conditions d’utilisation',
-              message:
-                  'Les conditions d’utilisation définitives seront accessibles depuis cet emplacement.',
-            ),
+            subtitle: 'Règles d’accès et usage des contenus',
+            onTap: () => context.push(Routes.termsOfUse),
           ),
         ],
       ),
