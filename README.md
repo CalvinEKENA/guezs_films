@@ -2,6 +2,11 @@
 
 Application Flutter de streaming cinéma premium, conçue pour mobile et Web.
 
+Ce dépôt regroupe désormais deux surfaces complémentaires:
+
+- `films.guezs-house.com`: application Flutter GUEZS FILMS;
+- `guezs-house.com`: site institutionnel Next.js situé dans `guezs_house_web/`.
+
 Le produit couvre actuellement:
 
 - catalogue films et séries;
@@ -104,6 +109,8 @@ La signature release Android utilise `android/key.properties`. Le keystore et se
 
 ## Build et déploiement Web
 
+GUEZS FILMS (`films.guezs-house.com`):
+
 ```powershell
 flutter build web --release
 firebase deploy --only hosting
@@ -116,6 +123,18 @@ firebase deploy --only hosting
 - `/series/:id`;
 - `/watch/film/:filmId`;
 - `/watch/series/:seriesId/season/:seasonId/episode/:episodeId`.
+
+Site GUEZS HOUSE (`guezs-house.com`):
+
+```powershell
+cd guezs_house_web
+npm ci
+npm run lint
+npm run build
+```
+
+L'export statique est généré dans `guezs_house_web/out/`. Le ZIP Hostinger et
+les sorties de build sont locaux et ne doivent pas être commités.
 
 ## Firebase
 
