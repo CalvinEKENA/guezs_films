@@ -20,8 +20,10 @@ import 'package:guezs_films/features/access/domain/entities/watch_access_result.
 import 'package:guezs_films/features/access/data/repositories/cloud_functions_watch_access_repository.dart';
 import 'package:guezs_films/features/access/presentation/providers/watch_access_providers.dart';
 import 'package:guezs_films/features/auth/domain/entities/user_entity.dart';
+import 'package:guezs_films/features/auth/presentation/models/onboarding_slide_model.dart';
 import 'package:guezs_films/features/auth/presentation/providers/auth_error_mapper.dart';
 import 'package:guezs_films/features/auth/presentation/providers/auth_providers.dart';
+import 'package:guezs_films/features/auth/presentation/pages/onboarding_page.dart';
 import 'package:guezs_films/features/details/presentation/pages/details_page.dart';
 import 'package:guezs_films/features/downloads/presentation/pages/downloads_page.dart';
 import 'package:guezs_films/features/downloads/presentation/providers/download_providers.dart';
@@ -218,6 +220,73 @@ void main() {
     expect(message, contains('pas disponible'));
     expect(message, isNot(contains('192.168.')));
     expect(message, isNot(contains('Firebase')));
+  });
+
+  test('Premium onboarding declares the four expected WebP assets', () {
+    expect(onboardingSlides.map((slide) => slide.assetPath), [
+      'assets/images/onboarding/onboarding_cinema_hall.webp',
+      'assets/images/onboarding/onboarding_story_cards.webp',
+      'assets/images/onboarding/onboarding_private_room.webp',
+      'assets/images/onboarding/onboarding_vip_access.webp',
+    ]);
+  });
+
+  testWidgets('Premium onboarding completes its four-screen journey', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    var completed = false;
+    final router = GoRouter(
+      initialLocation: Routes.onboarding,
+      routes: [
+        GoRoute(
+          path: Routes.onboarding,
+          builder: (context, state) =>
+              OnboardingPage(onCompleted: () async => completed = true),
+        ),
+        GoRoute(
+          path: Routes.login,
+          builder: (context, state) => const Text('Inscription GUEZS FILMS'),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(child: MaterialApp.router(routerConfig: router)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Le cinéma africain, dans son plus bel écrin.'),
+      findsOneWidget,
+    );
+    expect(find.text('Commencer'), findsOneWidget);
+
+    await tester.tap(find.text('Commencer'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Des histoires qui continuent après l’écran.'),
+      findsOneWidget,
+    );
+    expect(find.text('Suivant'), findsOneWidget);
+
+    await tester.tap(find.text('Suivant'));
+    await tester.pumpAndSettle();
+    expect(find.text('Regardez à votre rythme.'), findsOneWidget);
+
+    await tester.tap(find.text('Suivant'));
+    await tester.pumpAndSettle();
+    expect(find.text('Entrez quand vous êtes prêt.'), findsOneWidget);
+    expect(find.text('Explorer GUEZS FILMS'), findsOneWidget);
+
+    await tester.tap(find.text('Explorer GUEZS FILMS'));
+    await tester.pumpAndSettle();
+
+    expect(completed, isTrue);
+    expect(find.text('Inscription GUEZS FILMS'), findsOneWidget);
   });
 
   testWidgets('Search presents premium discovery and catalog filters', (
